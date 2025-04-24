@@ -4,6 +4,9 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import Index from '@/pages/Index';
 import AppPage from '@/pages/AppPage';
 import NotFound from '@/pages/NotFound';
+import TermsPage from '@/pages/TermsPage';
+import PrivacyPage from '@/pages/PrivacyPage';
+import CookiesPage from '@/pages/CookiesPage';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -31,6 +34,9 @@ const AppRoutes: React.FC = () => {
   return (
     <Routes>
       <Route path="/" element={<Index />} />
+      <Route path="/termos" element={<TermsPage />} />
+      <Route path="/privacidade" element={<PrivacyPage />} />
+      <Route path="/cookies" element={<CookiesPage />} />
       <Route
         path="/app"
         element={

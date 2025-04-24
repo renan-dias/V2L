@@ -2,10 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { LoginButton } from '@/components/auth/LoginButton';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -41,11 +44,18 @@ const Navbar: React.FC = () => {
           <button onClick={() => scrollToSection('sobre')} className="font-medium hover:text-primary transition-colors">Sobre</button>
           <button onClick={() => scrollToSection('como-funciona')} className="font-medium hover:text-primary transition-colors">Como Funciona</button>
           <button onClick={() => scrollToSection('converter')} className="font-medium hover:text-primary transition-colors">Converter</button>
-          <Button asChild>
-            <Link to="/app" className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity">
-              Começar
-            </Link>
-          </Button>
+          <Link to="/termos" className="font-medium hover:text-primary transition-colors">Termos</Link>
+          <Link to="/privacidade" className="font-medium hover:text-primary transition-colors">Privacidade</Link>
+          <Link to="/cookies" className="font-medium hover:text-primary transition-colors">Cookies</Link>
+          {user ? (
+            <Button asChild>
+              <Link to="/app" className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity">
+                Meus Projetos
+              </Link>
+            </Button>
+          ) : (
+            <LoginButton />
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -65,11 +75,18 @@ const Navbar: React.FC = () => {
             <button onClick={() => scrollToSection('sobre')} className="block w-full text-left font-medium hover:text-primary transition-colors">Sobre</button>
             <button onClick={() => scrollToSection('como-funciona')} className="block w-full text-left font-medium hover:text-primary transition-colors">Como Funciona</button>
             <button onClick={() => scrollToSection('converter')} className="block w-full text-left font-medium hover:text-primary transition-colors">Converter</button>
-            <Button asChild className="w-full">
-              <Link to="/app" className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity">
-                Começar
-              </Link>
-            </Button>
+            <Link to="/termos" className="block w-full text-left font-medium hover:text-primary transition-colors">Termos</Link>
+            <Link to="/privacidade" className="block w-full text-left font-medium hover:text-primary transition-colors">Privacidade</Link>
+            <Link to="/cookies" className="block w-full text-left font-medium hover:text-primary transition-colors">Cookies</Link>
+            {user ? (
+              <Button asChild className="w-full">
+                <Link to="/app" className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity">
+                  Meus Projetos
+                </Link>
+              </Button>
+            ) : (
+              <LoginButton />
+            )}
           </div>
         </div>
       )}
