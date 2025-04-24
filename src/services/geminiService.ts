@@ -1,4 +1,3 @@
-
 /**
  * Service to interact with Google Gemini API for Libras interpretation
  */
@@ -13,43 +12,90 @@ export interface InterpretationResult {
   subtitleId: string;
   startTime: number;
   endTime: number;
+  originalText: string;
   librasInterpretation: string;
+  prompt?: string; // Prompt utilizado para gerar a interpretação
 }
 
-const SYSTEM_PROMPT = `Você é um especialista em Língua Brasileira de Sinais (Libras).
-Sua tarefa é converter o texto em português para uma interpretação em Libras.
+const DEFAULT_SYSTEM_PROMPT = `Você é um especialista em Língua Brasileira de Sinais (Libras).
+Sua tarefa é converter o texto em português para uma interpretação concisa em Libras, preservando o significado principal.
 Considere:
-1. A gramática específica da Libras
-2. Os sinais mais apropriados para cada conceito
-3. A estrutura espacial da Libras
-4. Os classificadores quando necessário
-5. A expressão facial e corporal adequada
+1. A gramática específica da Libras, que é diferente do português
+2. Use uma estrutura mais direta e objetiva (sujeito-verbo-objeto)
+3. Elimine artigos, preposições e outras palavras que não são essenciais em Libras
+4. Reduza o texto ao essencial sem perder o significado principal
+5. Mantenha conceitos e terminologias técnicas importantes
+6. Forneça uma versão mais curta e simplificada que possa ser interpretada em Libras
 
-Forneça a interpretação em um formato que possa ser usado pelo VLibras.`;
+Forneça apenas o texto da interpretação em Libras, sem explicações ou comentários adicionais.`;
 
-export const convertTextToLibras = async (subtitles: Subtitle[]): Promise<InterpretationResult[]> => {
+export const generateLibrasInterpretation = async (
+  subtitle: Subtitle, 
+  customPrompt?: string
+): Promise<InterpretationResult> => {
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    
+    const systemPrompt = customPrompt || DEFAULT_SYSTEM_PROMPT;
+    const prompt = `${systemPrompt}\n\nTexto original: "${subtitle.text}"\n\nInterpretação concisa em Libras:`;
+    
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    const interpretationText = response.text().trim();
+    
+    return {
+      subtitleId: subtitle.id,
+      startTime: subtitle.startTime,
+      endTime: subtitle.endTime,
+      originalText: subtitle.text,
+      librasInterpretation: interpretationText,
+      prompt: systemPrompt
+    };
+  } catch (error) {
+    console.error('Erro ao gerar interpretação em Libras:', error);
+    throw error;
+  }
+};
+
+export const convertTextToLibras = async (
+  subtitles: Subtitle[], 
+  customPrompt?: string
+): Promise<InterpretationResult[]> => {
+  try {
     const results: InterpretationResult[] = [];
     
     for (const subtitle of subtitles) {
-      const prompt = `${SYSTEM_PROMPT}\n\nTexto: "${subtitle.text}"\n\nInterpretação em Libras:`;
-      
-      const result = await model.generateContent(prompt);
-      const response = result.response;
-      const text = response.text();
-      
-      results.push({
-        subtitleId: subtitle.id,
-        startTime: subtitle.startTime,
-        endTime: subtitle.endTime,
-        librasInterpretation: text.trim()
-      });
+      const result = await generateLibrasInterpretation(subtitle, customPrompt);
+      results.push(result);
     }
     
     return results;
   } catch (error) {
-    console.error('Error converting text to Libras:', error);
+    console.error('Erro ao converter texto para Libras:', error);
     throw error;
   }
 };
+
+// Sugestões de prompts para o usuário
+export const PROMPT_SUGGESTIONS = [
+  {
+    name: "Padrão",
+    description: "Cria uma versão mais concisa preservando o significado principal.",
+    prompt: DEFAULT_SYSTEM_PROMPT
+  },
+  {
+    name: "Simplificado", 
+    description: "Versão extremamente simplificada para frases curtas.",
+    prompt: `Simplifique ao máximo esta frase para Libras, mantendo apenas as palavras-chave essenciais para transmitir o significado básico. Elimine todas as palavras não essenciais como artigos, preposições e conjunções. Use a estrutura básica de Libras (sujeito-verbo-objeto) e forneça apenas o resultado final sem comentários adicionais.`
+  },
+  {
+    name: "Técnico",
+    description: "Mantém termos técnicos importantes com explicações simples.",
+    prompt: `Converta o texto para Libras, mantendo os termos técnicos importantes, mas simplifique as explicações em torno desses termos. Preserve a precisão técnica enquanto torna a estrutura mais adequada para Libras. Elimine palavras não essenciais e forneça apenas o resultado final sem comentários adicionais.`
+  },
+  {
+    name: "Educacional",
+    description: "Otimizado para conteúdo educacional, mantendo conceitos-chave.",
+    prompt: `Adapte este texto educacional para Libras, mantendo os conceitos-chave e terminologia educacional importante. Simplifique a estrutura para seguir a gramática de Libras, mas preserve os termos e conceitos essenciais para a aprendizagem. Forneça apenas o resultado final sem comentários adicionais.`
+  }
+];

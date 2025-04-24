@@ -10,6 +10,15 @@ import { Subtitle } from '@/types/subtitle';
 import { getProject } from '@/services/projectService';
 import { Upload, FileText, MessageSquare, Download } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { 
+  DEFAULT_SYSTEM_PROMPT, 
+  PROMPT_SUGGESTIONS, 
+  InterpretationResult 
+} from '@/services/geminiService';
 
 // Componente para o passo de Upload
 const UploadStep: React.FC<{ project: Project; onNext: () => void }> = ({ project, onNext }) => {
@@ -132,24 +141,128 @@ const SubtitlesStep: React.FC<{ project: Project; onNext: () => void }> = ({ pro
 const InterpretationStep: React.FC<{ project: Project; onNext: () => void }> = ({ project, onNext }) => {
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState<'pending' | 'processing' | 'completed'>('pending');
+  const [subtitles, setSubtitles] = useState<Subtitle[]>([]);
+  const [interpretations, setInterpretations] = useState<InterpretationResult[]>([]);
+  const [selectedInterpretation, setSelectedInterpretation] = useState<InterpretationResult | null>(null);
+  const [isPromptDialogOpen, setIsPromptDialogOpen] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState('');
+  const [isProcessingPrompt, setIsProcessingPrompt] = useState(false);
+  const { toast } = useToast();
 
+  // Carregar as legendas e gerar interpretações ao montar o componente
   useEffect(() => {
-    // Simulação de processamento
-    setStatus('processing');
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        const newProgress = prev + 10;
-        if (newProgress >= 100) {
-          clearInterval(interval);
+    const loadSubtitles = async () => {
+      try {
+        // Em um cenário real, carregaríamos as legendas do projeto
+        // Por agora, usamos dados de exemplo
+        const sampleSubtitles = [
+          { id: '1', startTime: 0, endTime: 3, text: 'Olá, este é um vídeo de demonstração.' },
+          { id: '2', startTime: 4, endTime: 7, text: 'Aqui mostramos como funciona o processo de conversão.' },
+          { id: '3', startTime: 8, endTime: 12, text: 'As legendas são geradas automaticamente com IA.' }
+        ];
+        setSubtitles(sampleSubtitles);
+        
+        // Iniciar o processamento das interpretações
+        setStatus('processing');
+        
+        // Simular o progresso de processamento
+        const interval = setInterval(() => {
+          setProgress(prev => {
+            if (prev < 90) {
+              return prev + 5;
+            }
+            return prev;
+          });
+        }, 300);
+
+        // Gerar interpretações para cada legenda
+        try {
+          // Em um cenário real, chamaríamos a API do Gemini
+          // Por agora, simulamos o resultado
+          const results: InterpretationResult[] = sampleSubtitles.map(subtitle => ({
+            subtitleId: subtitle.id,
+            startTime: subtitle.startTime,
+            endTime: subtitle.endTime,
+            originalText: subtitle.text,
+            librasInterpretation: simplifyText(subtitle.text),
+            prompt: DEFAULT_SYSTEM_PROMPT
+          }));
+          
+          setInterpretations(results);
+          setProgress(100);
           setStatus('completed');
-          return 100;
+          clearInterval(interval);
+        } catch (error) {
+          console.error('Erro ao gerar interpretações:', error);
+          toast({
+            title: "Erro",
+            description: "Não foi possível gerar as interpretações em Libras.",
+            variant: "destructive",
+          });
+          clearInterval(interval);
         }
-        return newProgress;
-      });
-    }, 1000);
+      } catch (error) {
+        console.error('Erro ao carregar legendas:', error);
+      }
+    };
+
+    loadSubtitles();
+  }, [toast]);
+
+  // Função auxiliar para simplificar texto (simulando o que o Gemini faria)
+  const simplifyText = (text: string): string => {
+    // Remover artigos, preposições e simplificar a estrutura
+    return text
+      .replace(/\b(o|a|os|as|um|uma|uns|umas)\b/gi, '')
+      .replace(/\b(de|da|do|das|dos|em|na|no|nas|nos|por|para|com)\b/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
+  const handleOpenPromptDialog = (interpretation: InterpretationResult) => {
+    setSelectedInterpretation(interpretation);
+    setCustomPrompt(interpretation.prompt || DEFAULT_SYSTEM_PROMPT);
+    setIsPromptDialogOpen(true);
+  };
+
+  const handleApplyCustomPrompt = async () => {
+    if (!selectedInterpretation || !customPrompt.trim()) return;
     
-    return () => clearInterval(interval);
-  }, []);
+    setIsProcessingPrompt(true);
+    
+    try {
+      // Em um cenário real, chamaríamos a API do Gemini com o prompt personalizado
+      // Por agora, simulamos o resultado
+      const updatedInterpretation: InterpretationResult = {
+        ...selectedInterpretation,
+        librasInterpretation: `[${customPrompt.length % 5 === 0 ? 'Muito simplificado' : 'Versão concisa'}]: ${simplifyText(selectedInterpretation.originalText)}`,
+        prompt: customPrompt
+      };
+      
+      // Atualizar a lista de interpretações
+      setInterpretations(prev => 
+        prev.map(item => 
+          item.subtitleId === selectedInterpretation.subtitleId ? updatedInterpretation : item
+        )
+      );
+      
+      toast({
+        title: "Prompt aplicado",
+        description: "A interpretação foi atualizada com sucesso.",
+      });
+      
+      setIsPromptDialogOpen(false);
+    } catch (error) {
+      console.error('Erro ao aplicar prompt personalizado:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível gerar a nova interpretação.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingPrompt(false);
+    }
+  };
 
   return (
     <Card className="p-6">
@@ -160,43 +273,157 @@ const InterpretationStep: React.FC<{ project: Project; onNext: () => void }> = (
           </div>
           <div>
             <h2 className="text-lg font-semibold">Interpretação</h2>
-            <p className="text-sm text-gray-500">Conversão para Libras em andamento</p>
+            <p className="text-sm text-gray-500">Conversão do texto para Libras</p>
           </div>
         </div>
         
-        <div className="py-6">
+        <div className="py-4">
           {status === 'processing' && (
             <div className="space-y-4">
               <Progress value={progress} className="w-full" />
               <p className="text-center text-sm text-gray-500">
-                {progress}% concluído - Por favor, aguarde enquanto processamos seu vídeo
+                {progress}% concluído - Gerando interpretações em Libras
               </p>
             </div>
           )}
           
           {status === 'completed' && (
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="border rounded-lg p-3 bg-gray-50">
+                  <h3 className="text-sm font-medium mb-2">Instruções</h3>
+                  <p className="text-xs text-gray-600 mb-2">
+                    Abaixo estão as interpretações em Libras geradas para cada legenda. 
+                    Você pode ajustar qualquer interpretação clicando no botão "Ajustar".
+                  </p>
+                </div>
+                
+                {interpretations.map((interpretation) => {
+                  const subtitle = subtitles.find(s => s.id === interpretation.subtitleId);
+                  if (!subtitle) return null;
+                  
+                  return (
+                    <div key={interpretation.subtitleId} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex justify-between items-start">
+                        <div className="text-xs text-gray-500 mb-1">
+                          {Math.floor(subtitle.startTime / 60)}:{(subtitle.startTime % 60).toString().padStart(2, '0')} - 
+                          {Math.floor(subtitle.endTime / 60)}:{(subtitle.endTime % 60).toString().padStart(2, '0')}
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleOpenPromptDialog(interpretation)}
+                        >
+                          Ajustar
+                        </Button>
+                      </div>
+                      
+                      <div className="space-y-2 mt-2">
+                        <div>
+                          <p className="text-xs text-gray-500">Texto original:</p>
+                          <p className="text-sm">{interpretation.originalText}</p>
+                        </div>
+                        
+                        <div>
+                          <p className="text-xs text-gray-500">Interpretação em Libras:</p>
+                          <p className="text-sm font-medium">{interpretation.librasInterpretation}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              <p className="font-medium">Interpretação concluída com sucesso!</p>
-              <p className="text-sm text-gray-500">
-                Seu vídeo com interpretação em Libras está pronto para exportação
-              </p>
+              
+              <Button 
+                onClick={onNext} 
+                className="w-full"
+              >
+                Continuar para Exportação
+              </Button>
             </div>
           )}
         </div>
-        
-        <Button 
-          onClick={onNext} 
-          disabled={status !== 'completed'} 
-          className="w-full"
-        >
-          Continuar para Exportação
-        </Button>
       </div>
+      
+      <Dialog open={isPromptDialogOpen} onOpenChange={setIsPromptDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Ajustar Interpretação em Libras</DialogTitle>
+            <DialogDescription>
+              Personalize o prompt para gerar uma interpretação mais adequada para Libras.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Texto original:</h4>
+              <div className="p-3 bg-gray-50 rounded-md text-sm">
+                {selectedInterpretation?.originalText || ''}
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Interpretação atual:</h4>
+              <div className="p-3 bg-gray-50 rounded-md text-sm">
+                {selectedInterpretation?.librasInterpretation || ''}
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="prompt">Prompt personalizado:</Label>
+                <Select 
+                  onValueChange={(value) => {
+                    const suggestion = PROMPT_SUGGESTIONS.find(s => s.name === value);
+                    if (suggestion) {
+                      setCustomPrompt(suggestion.prompt);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Selecione um modelo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PROMPT_SUGGESTIONS.map(suggestion => (
+                      <SelectItem key={suggestion.name} value={suggestion.name}>
+                        {suggestion.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <Textarea
+                id="prompt"
+                placeholder="Digite instruções detalhadas de como a IA deve adaptar o texto para Libras..."
+                value={customPrompt}
+                onChange={(e) => setCustomPrompt(e.target.value)}
+                className="min-h-[120px]"
+              />
+              <p className="text-xs text-gray-500">
+                Escreva instruções claras para a IA sobre como adaptar o texto para Libras.
+                Seja específico sobre a estrutura, simplicidade e quais elementos manter ou remover.
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPromptDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleApplyCustomPrompt} disabled={isProcessingPrompt}>
+              {isProcessingPrompt ? (
+                <>
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-t-transparent border-white"></div>
+                  Processando...
+                </>
+              ) : (
+                'Aplicar'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
