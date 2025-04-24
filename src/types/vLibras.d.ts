@@ -4,7 +4,7 @@ interface VLibrasWidget {
 }
 
 interface VLibras {
-  Widget: VLibrasWidget | ((pluginUrl: string) => void);
+  Widget: VLibrasWidget | ((pluginUrl: string) => void) | { translate: (text: string) => void };
 }
 
 declare global {

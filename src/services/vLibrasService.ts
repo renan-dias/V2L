@@ -44,7 +44,12 @@ export const interpretTextWithVLibras = (text: string): void => {
   try {
     // Access the VLibras widget and send the text
     if (window.VLibras && window.VLibras.Widget) {
-      window.VLibras.Widget.translate(text);
+      // Check if Widget is an object with translate method
+      if (typeof window.VLibras.Widget === 'object' && 'translate' in window.VLibras.Widget) {
+        window.VLibras.Widget.translate(text);
+      } else {
+        console.error('VLibras Widget is not properly initialized or does not have translate method');
+      }
     }
   } catch (error) {
     console.error('Error interpreting text with VLibras:', error);
@@ -106,4 +111,3 @@ export const toggleVLibrasVisibility = (show: boolean): void => {
   
   widgetContainer.style.display = show ? 'block' : 'none';
 };
-
