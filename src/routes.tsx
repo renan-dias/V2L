@@ -12,7 +12,8 @@ import TermsPage from '@/pages/TermsPage';
 import PrivacyPage from '@/pages/PrivacyPage';
 import CookiesPage from '@/pages/CookiesPage';
 
-const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// Wrap with memo to avoid unnecessary rerenders
+const PrivateRoute: React.FC<{ children: React.ReactNode }> = React.memo(({ children }) => {
   const { user } = useAuth();
   
   if (!user) {
@@ -20,9 +21,10 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   }
   
   return <>{children}</>;
-};
+});
 
-const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// Wrap with memo to avoid unnecessary rerenders
+const PublicRoute: React.FC<{ children: React.ReactNode }> = React.memo(({ children }) => {
   const { user } = useAuth();
   
   if (user) {
@@ -30,7 +32,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }
   
   return <>{children}</>;
-};
+});
 
 const AppRoutes: React.FC = () => {
   return (
