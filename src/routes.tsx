@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -6,27 +7,32 @@ import AppPage from '@/pages/AppPage';
 import DashboardPage from '@/pages/DashboardPage';
 import ConverterPage from '@/pages/ConverterPage';
 import ProcessPage from '@/pages/ProcessPage';
-import Index from '@/pages/Index';
 import NotFound from '@/pages/NotFound';
 import TermsPage from '@/pages/TermsPage';
 import PrivacyPage from '@/pages/PrivacyPage';
 import CookiesPage from '@/pages/CookiesPage';
 
-const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// Wrap with memo to avoid unnecessary rerenders
+const PrivateRoute: React.FC<{ children: React.ReactNode }> = React.memo(({ children }) => {
   const { user } = useAuth();
+  
   if (!user) {
     return <Navigate to="/login" replace />;
   }
+  
   return <>{children}</>;
-};
+});
 
-const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// Wrap with memo to avoid unnecessary rerenders
+const PublicRoute: React.FC<{ children: React.ReactNode }> = React.memo(({ children }) => {
   const { user } = useAuth();
+  
   if (user) {
     return <Navigate to="/app/dashboard" replace />;
   }
+  
   return <>{children}</>;
-};
+});
 
 const AppRoutes: React.FC = () => {
   return (
@@ -57,4 +63,4 @@ const AppRoutes: React.FC = () => {
   );
 };
 
-export default AppRoutes; 
+export default AppRoutes;
