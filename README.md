@@ -102,7 +102,7 @@ Este projeto está licenciado sob a licença MIT. Veja o arquivo `LICENSE` para 
 
 Seu Nome - [@seu_twitter](https://twitter.com/seu_twitter) - email@example.com
 
-Link do Projeto: [https://github.com/seu-usuario/video-2-libras](https://github.com/seu-usuario/video-2-libras)
+Link do Projeto: [https://github.com/renan-dias/video-2-libras](https://github.com/renan-dias/video-2-libras)
 
 ---
 
