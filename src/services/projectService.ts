@@ -12,7 +12,7 @@ import {
   deleteDoc
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
+import { db, storage, isStorageConfigured } from '@/lib/firebase';
 import { Project } from '@/types/project';
 
 export const projectsCollection = collection(db, 'projects');
@@ -23,6 +23,11 @@ export const createProject = async (
   videoFile: File
 ): Promise<Project> => {
   try {
+    // Verificar se o Firebase está configurado corretamente
+    if (!isStorageConfigured) {
+      throw new Error('O Firebase Storage não está configurado corretamente. Verifique o arquivo .env com suas credenciais.');
+    }
+
     // 1. Criar o documento do projeto
     const project: Omit<Project, 'id'> = {
       title,
@@ -38,30 +43,56 @@ export const createProject = async (
       updatedAt: Timestamp.fromDate(project.updatedAt),
     });
 
-    // 2. Upload do vídeo
-    const videoRef = ref(storage, `videos/${userId}/${docRef.id}/${videoFile.name}`);
-    await uploadBytes(videoRef, videoFile);
-    const videoUrl = await getDownloadURL(videoRef);
+    // 2. Upload do vídeo com tratamento de erro mais detalhado
+    try {
+      // Remover caracteres especiais e espaços do nome do arquivo
+      const safeFileName = videoFile.name.replace(/[^a-zA-Z0-9.]/g, '_');
+      
+      const videoRef = ref(storage, `videos/${userId}/${docRef.id}/${safeFileName}`);
+      
+      // Tentar fazer o upload
+      const uploadResult = await uploadBytes(videoRef, videoFile);
+      if (!uploadResult) {
+        throw new Error('Falha no upload do vídeo: Resposta vazia do servidor');
+      }
+      
+      // Obter a URL do vídeo
+      const videoUrl = await getDownloadURL(videoRef);
+      if (!videoUrl) {
+        throw new Error('Falha ao obter URL do vídeo após upload');
+      }
 
-    // 3. Atualizar o projeto com a URL do vídeo
-    const metadata = {
-      size: videoFile.size,
-      format: videoFile.type,
-    };
+      // 3. Atualizar o projeto com a URL do vídeo
+      const metadata = {
+        size: videoFile.size,
+        format: videoFile.type,
+      };
 
-    await updateDoc(docRef, {
-      videoUrl,
-      metadata,
-      status: 'processing',
-    });
+      await updateDoc(docRef, {
+        videoUrl,
+        metadata,
+        status: 'processing',
+      });
 
-    return {
-      ...project,
-      id: docRef.id,
-      videoUrl,
-      metadata,
-      status: 'processing',
-    };
+      return {
+        ...project,
+        id: docRef.id,
+        videoUrl,
+        metadata,
+        status: 'processing',
+      };
+    } catch (uploadError) {
+      // Em caso de erro no upload, marcar o projeto como erro e lançar exceção
+      console.error('Erro específico no upload do vídeo:', uploadError);
+      
+      // Atualizar o projeto com status de erro
+      await updateDoc(docRef, {
+        status: 'error',
+        error: 'Erro no upload do vídeo. Por favor, tente novamente.'
+      });
+      
+      throw new Error(`Erro ao fazer upload do vídeo: ${uploadError.message || 'Falha no servidor'}`);
+    }
   } catch (error) {
     console.error('Erro ao criar projeto:', error);
     throw error;

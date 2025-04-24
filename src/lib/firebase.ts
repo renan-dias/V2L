@@ -7,7 +7,29 @@ import { toast } from 'sonner';
 // Check if Firebase configuration is available
 const hasValidFirebaseConfig = 
   import.meta.env.VITE_FIREBASE_API_KEY && 
-  import.meta.env.VITE_FIREBASE_PROJECT_ID;
+  import.meta.env.VITE_FIREBASE_PROJECT_ID &&
+  import.meta.env.VITE_FIREBASE_STORAGE_BUCKET;
+
+// Função para verificar se temos todas as configurações necessárias
+const validateFirebaseConfig = () => {
+  const requiredVars = [
+    'VITE_FIREBASE_API_KEY', 
+    'VITE_FIREBASE_AUTH_DOMAIN', 
+    'VITE_FIREBASE_PROJECT_ID',
+    'VITE_FIREBASE_STORAGE_BUCKET',
+    'VITE_FIREBASE_MESSAGING_SENDER_ID',
+    'VITE_FIREBASE_APP_ID'
+  ];
+  
+  const missingVars = requiredVars.filter(varName => !import.meta.env[varName]);
+  
+  if (missingVars.length > 0) {
+    console.error(`Configuração do Firebase incompleta. Variáveis ausentes: ${missingVars.join(', ')}`);
+    return false;
+  }
+  
+  return true;
+};
 
 // Use real config if available, otherwise use demo values
 const firebaseConfig = hasValidFirebaseConfig ? {
@@ -35,21 +57,36 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
+// Verificar se o acesso ao Storage está configurado corretamente
+export const isStorageConfigured = validateFirebaseConfig() && hasValidFirebaseConfig;
+
 // Show warning toast if using demo config
 if (!hasValidFirebaseConfig) {
   // Display a warning once the app has loaded
   setTimeout(() => {
     toast.warning(
-      "Running in demo mode - Firebase features will be limited",
+      "Executando em modo de demonstração - Recursos do Firebase serão limitados",
       {
-        description: "Add your Firebase credentials to .env to enable full functionality",
-        duration: 8000,
+        description: "Recursos como upload de vídeo não funcionarão. Adicione suas credenciais do Firebase ao arquivo .env para habilitar funcionalidade completa.",
+        duration: 10000,
       }
     );
     
     console.warn(
-      "Firebase is running in demo mode. Add your Firebase credentials to .env file to enable full functionality."
+      "Firebase está rodando em modo de demonstração. Algumas funcionalidades como upload de arquivos não funcionarão. Para habilitar todas as funcionalidades, adicione suas credenciais do Firebase ao arquivo .env."
     );
+    
+    // Instruções para configurar o Firebase
+    console.info(`
+    Para configurar o Firebase, crie um arquivo .env na raiz do projeto com as seguintes variáveis:
+    
+    VITE_FIREBASE_API_KEY=sua_api_key
+    VITE_FIREBASE_AUTH_DOMAIN=seu_projeto.firebaseapp.com
+    VITE_FIREBASE_PROJECT_ID=seu_projeto
+    VITE_FIREBASE_STORAGE_BUCKET=seu_projeto.appspot.com
+    VITE_FIREBASE_MESSAGING_SENDER_ID=seu_messaging_sender_id
+    VITE_FIREBASE_APP_ID=seu_app_id
+    `);
   }, 1000);
 }
 

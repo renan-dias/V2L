@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, AlertCircle } from 'lucide-react';
+import { Upload, AlertCircle, Info } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { createProject } from '@/services/projectService';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { isStorageConfigured } from '@/lib/firebase';
 
 const ConverterPage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -53,6 +54,16 @@ const ConverterPage: React.FC = () => {
     setError(null);
 
     try {
+      // Verificação adicional do arquivo antes de enviar
+      if (!selectedFile.type.startsWith('video/')) {
+        throw new Error('Por favor, selecione um arquivo de vídeo válido.');
+      }
+
+      // Verificar se o arquivo não está corrompido
+      if (selectedFile.size === 0) {
+        throw new Error('O arquivo de vídeo parece estar corrompido ou vazio.');
+      }
+
       const project = await createProject(user.uid, title, selectedFile);
       
       toast({
@@ -64,10 +75,15 @@ const ConverterPage: React.FC = () => {
       navigate(`/app/process/${project.id}`);
     } catch (error) {
       console.error('Erro ao criar projeto:', error);
-      setError('Ocorreu um erro ao fazer upload do vídeo. Por favor, tente novamente.');
+      // Mensagem de erro mais específica
+      const errorMessage = error.message?.includes('Firebase') 
+        ? 'Erro de conexão com o servidor. Verifique sua conexão com a internet e tente novamente.'
+        : error.message || 'Ocorreu um erro ao fazer upload do vídeo. Por favor, tente novamente.';
+      
+      setError(errorMessage);
       toast({
         title: "Erro ao criar projeto",
-        description: "Ocorreu um erro ao processar sua solicitação.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -75,10 +91,57 @@ const ConverterPage: React.FC = () => {
     }
   };
 
+  // Função para lidar com arquivos arrastados
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      
+      // Validar o tipo e tamanho do arquivo
+      if (!file.type.startsWith('video/')) {
+        setError('Por favor, selecione um arquivo de vídeo válido.');
+        return;
+      }
+      
+      // Limite de 100MB
+      const maxSize = 100 * 1024 * 1024; // 100MB em bytes
+      if (file.size > maxSize) {
+        setError('O arquivo é muito grande. O tamanho máximo permitido é 100MB.');
+        return;
+      }
+
+      setSelectedFile(file);
+      setError(null);
+      
+      // Sugerir um título baseado no nome do arquivo
+      if (!title) {
+        setTitle(file.name.split('.')[0]);
+      }
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-6">Converter Vídeo para Libras</h1>
+        
+        {!isStorageConfigured && (
+          <Alert variant="warning" className="mb-6">
+            <Info className="h-4 w-4" />
+            <AlertTitle>Modo de demonstração</AlertTitle>
+            <AlertDescription>
+              O aplicativo está rodando em modo de demonstração. O upload de vídeo pode não funcionar corretamente.
+              Configure o Firebase para utilizar todas as funcionalidades.
+            </AlertDescription>
+          </Alert>
+        )}
         
         <div className="grid gap-6 mb-8">
           <Card className="p-6">
@@ -137,7 +200,11 @@ const ConverterPage: React.FC = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="video">Arquivo de Vídeo</Label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <div 
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center"
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                >
                   <input
                     type="file"
                     id="video"
@@ -170,7 +237,7 @@ const ConverterPage: React.FC = () => {
               >
                 {isUploading ? (
                   <>
-                    <span className="animate-spin mr-2">⏳</span>
+                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-t-transparent border-white"></div>
                     Enviando...
                   </>
                 ) : (
