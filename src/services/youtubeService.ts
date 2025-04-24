@@ -11,36 +11,39 @@ const YOUTUBE_URL_REGEX = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
 const YOUTUBE_ID_REGEX = /^.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/|shorts\/)|(?:(?:watch)?\?v(?:i)?=|\&v(?:i)?=))([^#\&\?]*).*/;
 
 export interface YouTubeVideoInfo {
-  id: string;
-  url: string;
-  embedUrl: string;
+  videoId: string;
+  title?: string;
+  thumbnailUrl?: string;
+  duration?: string;
 }
 
-export const validateYouTubeUrl = (url: string): boolean => {
-  return YOUTUBE_URL_REGEX.test(url);
-};
+export function validateYouTubeUrl(url: string): string | null {
+  const patterns = [
+    /^(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([^&]+)/,
+    /^(?:https?:\/\/)?(?:www\.)?youtu\.be\/([^?]+)/,
+    /^(?:https?:\/\/)?(?:www\.)?youtube\.com\/embed\/([^?]+)/
+  ];
 
-export const extractVideoId = (url: string): string | null => {
-  const match = url.match(YOUTUBE_ID_REGEX);
-  return match ? match[1] : null;
-};
-
-export const getVideoInfo = (url: string): YouTubeVideoInfo | null => {
-  if (!validateYouTubeUrl(url)) {
-    return null;
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) {
+      return match[1];
+    }
   }
 
-  const videoId = extractVideoId(url);
-  if (!videoId) {
-    return null;
-  }
+  return null;
+}
 
+export async function getVideoInfo(videoId: string): Promise<YouTubeVideoInfo> {
+  // Note: Esta é uma implementação básica.
+  // Para uma implementação completa, você precisaria usar a API do YouTube
+  // com uma chave de API válida.
+  
   return {
-    id: videoId,
-    url: `https://www.youtube.com/watch?v=${videoId}`,
-    embedUrl: `https://www.youtube.com/embed/${videoId}`
+    videoId,
+    thumbnailUrl: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
   };
-};
+}
 
 export const getVideoDetails = async (videoId: string) => {
   try {

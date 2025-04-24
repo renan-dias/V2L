@@ -14,13 +14,15 @@ import {
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage, isStorageConfigured, checkFirebasePermissions } from '@/lib/firebase';
 import { Project } from '@/types/project';
+import { YouTubeVideoInfo } from './youtubeService';
 
 export const projectsCollection = collection(db, 'projects');
 
 export const createProject = async (
   userId: string,
   title: string,
-  videoFile: File
+  videoFile: File | null,
+  youtubeInfo?: YouTubeVideoInfo
 ): Promise<Project> => {
   try {
     // Verificar se o Firebase está configurado corretamente
@@ -34,91 +36,30 @@ export const createProject = async (
       throw new Error('Permissões do Firebase insuficientes. Verifique a configuração das regras de segurança ou use emuladores em ambiente de desenvolvimento.');
     }
 
-    // 1. Criar o documento do projeto
-    const project: Omit<Project, 'id'> = {
-      title,
+    let videoUrl = '';
+
+    // Se temos um arquivo de vídeo, fazer upload
+    if (videoFile) {
+      const storageRef = ref(storage, `videos/${userId}/${Date.now()}-${videoFile.name}`);
+      await uploadBytes(storageRef, videoFile);
+      videoUrl = await getDownloadURL(storageRef);
+    }
+
+    const projectData = {
       userId,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      title,
       status: 'pending',
+      createdAt: new Date(),
+      ...(videoUrl ? { videoUrl } : {}),
+      ...(youtubeInfo ? { youtubeInfo } : {})
     };
 
-    const docRef = await addDoc(projectsCollection, {
-      ...project,
-      createdAt: Timestamp.fromDate(project.createdAt),
-      updatedAt: Timestamp.fromDate(project.updatedAt),
-    });
-
-    // 2. Upload do vídeo com tratamento de erro mais detalhado
-    try {
-      // Remover caracteres especiais e espaços do nome do arquivo
-      const safeFileName = videoFile.name.replace(/[^a-zA-Z0-9.]/g, '_');
-      
-      const videoPath = `videos/${userId}/${docRef.id}/${safeFileName}`;
-      const videoRef = ref(storage, videoPath);
-      
-      console.log(`Tentando fazer upload para: ${videoPath}`);
-      
-      // Tentar fazer o upload
-      const uploadResult = await uploadBytes(videoRef, videoFile);
-      if (!uploadResult) {
-        throw new Error('Falha no upload do vídeo: Resposta vazia do servidor');
-      }
-      
-      // Obter a URL do vídeo
-      const videoUrl = await getDownloadURL(videoRef);
-      if (!videoUrl) {
-        throw new Error('Falha ao obter URL do vídeo após upload');
-      }
-
-      // 3. Atualizar o projeto com a URL do vídeo
-      const metadata = {
-        size: videoFile.size,
-        format: videoFile.type,
-      };
-
-      await updateDoc(docRef, {
-        videoUrl,
-        metadata,
-        status: 'processing',
-      });
-
-      return {
-        ...project,
-        id: docRef.id,
-        videoUrl,
-        metadata,
-        status: 'processing',
-      };
-    } catch (uploadError: any) {
-      // Em caso de erro no upload, marcar o projeto como erro e lançar exceção
-      console.error('Erro específico no upload do vídeo:', uploadError);
-      
-      // Verificar se é um erro de permissão
-      if (uploadError.code === 'storage/unauthorized' || 
-          uploadError.message?.includes('permission') || 
-          uploadError.message?.includes('permissions') ||
-          uploadError.message?.includes('unauthorized')) {
-        
-        console.error('Erro de permissão detectado:', uploadError);
-        
-        // Atualizar o projeto com status de erro
-        await updateDoc(docRef, {
-          status: 'error',
-          error: 'Erro de permissão. O servidor não permite upload de arquivos.'
-        });
-        
-        throw new Error(`Erro de permissão: Não foi possível fazer upload do vídeo. Verifique se você tem as permissões necessárias.`);
-      }
-      
-      // Atualizar o projeto com status de erro
-      await updateDoc(docRef, {
-        status: 'error',
-        error: 'Erro no upload do vídeo. Por favor, tente novamente.'
-      });
-      
-      throw new Error(`Erro ao fazer upload do vídeo: ${uploadError.message || 'Falha no servidor'}`);
-    }
+    const docRef = await addDoc(projectsCollection, projectData);
+    
+    return {
+      id: docRef.id,
+      ...projectData
+    } as Project;
   } catch (error: any) {
     console.error('Erro ao criar projeto:', error);
     
