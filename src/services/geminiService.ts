@@ -17,7 +17,7 @@ export interface InterpretationResult {
   prompt?: string; // Prompt utilizado para gerar a interpretação
 }
 
-const DEFAULT_SYSTEM_PROMPT = `Você é um especialista em Língua Brasileira de Sinais (Libras).
+export const DEFAULT_SYSTEM_PROMPT = `Você é um especialista em Língua Brasileira de Sinais (Libras).
 Sua tarefa é converter o texto em português para uma interpretação concisa em Libras, preservando o significado principal.
 Considere:
 1. A gramática específica da Libras, que é diferente do português

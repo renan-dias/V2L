@@ -60,6 +60,17 @@ export const storage = getStorage(app);
 // Verificar se o acesso ao Storage está configurado corretamente
 export const isStorageConfigured = validateFirebaseConfig() && hasValidFirebaseConfig;
 
+// Verificar se há regras de segurança em modo demo que podem causar problemas
+export const checkFirebasePermissions = async (): Promise<boolean> => {
+  if (!hasValidFirebaseConfig) {
+    console.warn("Firebase em modo demo - permissões não configuradas corretamente");
+    return false;
+  }
+  
+  // Se estiver usando o Firebase real, temos que confiar que as regras estão configuradas corretamente
+  return true;
+};
+
 // Show warning toast if using demo config
 if (!hasValidFirebaseConfig) {
   // Display a warning once the app has loaded
