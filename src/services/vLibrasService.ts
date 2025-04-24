@@ -1,4 +1,3 @@
-
 /**
  * Service to interact with VLibras for rendering an avatar interpreter
  */
@@ -20,6 +19,15 @@ export const loadVLibrasScript = (): Promise<void> => {
       const vLibrasScript = document.createElement('script');
       vLibrasScript.textContent = `
         new window.VLibras.Widget('https://vlibras.gov.br/app');
+        window.addEventListener('load', function() {
+          const widget = document.querySelector('.vw-plugin-wrapper');
+          if (widget) {
+            widget.style.position = 'fixed';
+            widget.style.zIndex = '9999';
+            widget.style.bottom = '20px';
+            widget.style.right = '20px';
+          }
+        });
       `;
       document.body.appendChild(vLibrasScript);
       resolve();
@@ -34,25 +42,17 @@ export const isVLibrasLoaded = (): boolean => {
   return !!window.VLibras;
 };
 
-// Send text to be interpreted by VLibras
+// Send text to VLibras for interpretation
 export const interpretTextWithVLibras = (text: string): void => {
   if (!isVLibrasLoaded()) {
     console.error('VLibras is not loaded');
     return;
   }
-  
+
   try {
-    // Access the VLibras widget and send the text
-    if (window.VLibras && window.VLibras.Widget) {
-      // Check if Widget is an object with translate method
-      if (typeof window.VLibras.Widget === 'object' && 'translate' in window.VLibras.Widget) {
-        window.VLibras.Widget.translate(text);
-      } else {
-        console.error('VLibras Widget is not properly initialized or does not have translate method');
-      }
-    }
+    window.VLibras.Widget.translate(text);
   } catch (error) {
-    console.error('Error interpreting text with VLibras:', error);
+    console.error('Error sending text to VLibras:', error);
   }
 };
 
@@ -74,6 +74,8 @@ export const positionVLibrasWidget = (
   }
   
   // Reset any custom positioning
+  widgetContainer.style.position = 'fixed';
+  widgetContainer.style.zIndex = '9999';
   widgetContainer.style.top = '';
   widgetContainer.style.bottom = '';
   widgetContainer.style.left = '';
@@ -82,20 +84,20 @@ export const positionVLibrasWidget = (
   // Apply new position
   switch (position) {
     case 'bottomRight':
-      widgetContainer.style.bottom = '0';
-      widgetContainer.style.right = '0';
+      widgetContainer.style.bottom = '20px';
+      widgetContainer.style.right = '20px';
       break;
     case 'bottomLeft':
-      widgetContainer.style.bottom = '0';
-      widgetContainer.style.left = '0';
+      widgetContainer.style.bottom = '20px';
+      widgetContainer.style.left = '20px';
       break;
     case 'topRight':
-      widgetContainer.style.top = '0';
-      widgetContainer.style.right = '0';
+      widgetContainer.style.top = '20px';
+      widgetContainer.style.right = '20px';
       break;
     case 'topLeft':
-      widgetContainer.style.top = '0';
-      widgetContainer.style.left = '0';
+      widgetContainer.style.top = '20px';
+      widgetContainer.style.left = '20px';
       break;
   }
 };

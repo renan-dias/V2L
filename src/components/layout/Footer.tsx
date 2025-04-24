@@ -1,13 +1,12 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Facebook, Instagram, Twitter, Youtube, Github } from 'lucide-react';
+import { Github, Globe } from 'lucide-react';
 
 const Footer: React.FC = () => {
   return (
     <footer className="bg-gray-50 pt-16 pb-8">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
           <div>
             <Link to="/" className="flex items-center space-x-2 mb-4">
               <span className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">V2L</span>
@@ -17,32 +16,13 @@ const Footer: React.FC = () => {
               Tornando seu conteúdo mais acessível através da Língua Brasileira de Sinais (Libras).
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-gray-400 hover:text-primary transition-colors" aria-label="Facebook">
-                <Facebook size={20} />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-primary transition-colors" aria-label="Instagram">
-                <Instagram size={20} />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-primary transition-colors" aria-label="Twitter">
-                <Twitter size={20} />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-primary transition-colors" aria-label="Youtube">
-                <Youtube size={20} />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-primary transition-colors" aria-label="Github">
+              <a href="https://github.com/renan-dias" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary transition-colors" aria-label="Github">
                 <Github size={20} />
               </a>
+              <a href="https://edustrial.tech" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary transition-colors" aria-label="Website">
+                <Globe size={20} />
+              </a>
             </div>
-          </div>
-          
-          <div>
-            <h3 className="font-semibold text-lg mb-4">Links Rápidos</h3>
-            <ul className="space-y-2">
-              <li><Link to="/" className="text-gray-600 hover:text-primary transition-colors">Home</Link></li>
-              <li><Link to="/sobre" className="text-gray-600 hover:text-primary transition-colors">Sobre</Link></li>
-              <li><Link to="/como-funciona" className="text-gray-600 hover:text-primary transition-colors">Como Funciona</Link></li>
-              <li><Link to="/converter" className="text-gray-600 hover:text-primary transition-colors">Converter</Link></li>
-            </ul>
           </div>
           
           <div>
@@ -56,8 +36,7 @@ const Footer: React.FC = () => {
           
           <div>
             <h3 className="font-semibold text-lg mb-4">Contato</h3>
-            <p className="text-gray-600 mb-2">contato@video2libras.com.br</p>
-            <p className="text-gray-600">+55 (11) 9999-9999</p>
+            <p className="text-gray-600">renan.barbono@educacao.mg.gov.br</p>
           </div>
         </div>
         

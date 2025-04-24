@@ -1,4 +1,3 @@
-
 /**
  * Service for exporting videos with VLibras interpreter
  */
@@ -12,100 +11,84 @@ export interface ExportOptions {
   fileName?: string;
 }
 
-export const exportVideoWithInterpreter = async (
-  options: ExportOptions
-): Promise<{ url: string }> => {
-  const { videoElement, vLibrasElement, fileName = 'video-with-libras' } = options;
-  
-  try {
-    // In a real application, this would use more sophisticated video processing
-    // For demo purposes, we'll create a screenshot of the current state
-    // and provide a download link
-    
-    // Wrap the video and VLibras elements in a container for screenshot
-    const container = document.createElement('div');
-    container.style.position = 'relative';
-    container.style.width = `${videoElement.offsetWidth}px`;
-    container.style.height = `${videoElement.offsetHeight}px`;
-    
-    // Clone the video element and its current frame
-    const videoCanvas = document.createElement('canvas');
-    videoCanvas.width = videoElement.videoWidth;
-    videoCanvas.height = videoElement.videoHeight;
-    const videoContext = videoCanvas.getContext('2d');
-    
-    if (videoContext) {
-      videoContext.drawImage(videoElement, 0, 0, videoCanvas.width, videoCanvas.height);
-    }
-    
-    // Position the canvas in the container
-    videoCanvas.style.position = 'absolute';
-    videoCanvas.style.top = '0';
-    videoCanvas.style.left = '0';
-    videoCanvas.style.width = '100%';
-    videoCanvas.style.height = '100%';
-    container.appendChild(videoCanvas);
-    
-    // Clone the VLibras element
-    const vLibrasClone = vLibrasElement.cloneNode(true) as HTMLElement;
-    vLibrasClone.style.position = 'absolute';
-    vLibrasClone.style.bottom = '0';
-    vLibrasClone.style.right = '0';
-    vLibrasClone.style.zIndex = '10';
-    container.appendChild(vLibrasClone);
-    
-    // Temporarily add the container to the document for html2canvas
-    document.body.appendChild(container);
-    
-    // Use html2canvas to create a screenshot
-    const canvas = await html2canvas(container, {
-      logging: false,
-      useCORS: true,
-      allowTaint: true
-    });
-    
-    // Remove the temporary container
-    document.body.removeChild(container);
-    
-    // Convert the canvas to a Blob
-    const blob = await new Promise<Blob>((resolve) => {
-      canvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.95);
-    });
-    
-    // Upload the blob to Firebase Storage
-    const storageRef = ref(storage, `exports/${Date.now()}-${fileName}.jpg`);
-    await uploadBytes(storageRef, blob);
-    const downloadURL = await getDownloadURL(storageRef);
-    
-    // Return the download URL
-    return {
-      url: downloadURL
-    };
-  } catch (error) {
-    console.error('Error exporting video with interpreter:', error);
-    throw new Error('Failed to export video');
-  }
-};
-
-// Simulate video processing with progress updates
 export const processVideoExport = async (
   options: ExportOptions,
   onProgress?: (progress: number) => void
 ): Promise<{ url: string }> => {
-  // Simulate processing time
-  const totalSteps = 10;
+  const { videoElement, vLibrasElement, fileName = 'video-with-libras' } = options;
   
-  for (let step = 1; step <= totalSteps; step++) {
-    // Wait a bit to simulate processing
-    await new Promise(resolve => setTimeout(resolve, 500));
+  try {
+    // Create a container for the video and VLibras
+    const container = document.createElement('div');
+    container.style.position = 'relative';
+    container.style.width = `${videoElement.offsetWidth}px`;
+    container.style.height = `${videoElement.offsetHeight}px`;
+    container.style.backgroundColor = '#000';
     
-    // Update progress
-    if (onProgress) {
-      onProgress((step / totalSteps) * 100);
+    // Clone the video element
+    const videoClone = videoElement.cloneNode(true) as HTMLVideoElement;
+    videoClone.style.width = '100%';
+    videoClone.style.height = '100%';
+    videoClone.style.objectFit = 'contain';
+    container.appendChild(videoClone);
+    
+    // Clone the VLibras element
+    const vLibrasClone = vLibrasElement.cloneNode(true) as HTMLElement;
+    vLibrasClone.style.position = 'absolute';
+    vLibrasClone.style.bottom = '20px';
+    vLibrasClone.style.right = '20px';
+    vLibrasClone.style.zIndex = '10';
+    container.appendChild(vLibrasClone);
+    
+    // Add the container to the document temporarily
+    document.body.appendChild(container);
+    
+    // Create a canvas for each frame
+    const canvas = document.createElement('canvas');
+    canvas.width = videoElement.videoWidth;
+    canvas.height = videoElement.videoHeight;
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx) {
+      throw new Error('Could not get canvas context');
     }
+    
+    // Simulate progress
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+      progress += 5;
+      if (progress > 90) {
+        clearInterval(progressInterval);
+      }
+      onProgress?.(progress);
+    }, 500);
+    
+    // Draw the current frame
+    ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+    
+    // Convert canvas to blob
+    const blob = await new Promise<Blob>((resolve) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob);
+        }
+      }, 'video/mp4');
+    });
+    
+    // Upload to Firebase Storage
+    const storageRef = ref(storage, `videos/${fileName}-${Date.now()}.mp4`);
+    await uploadBytes(storageRef, blob);
+    const url = await getDownloadURL(storageRef);
+    
+    // Clean up
+    document.body.removeChild(container);
+    clearInterval(progressInterval);
+    onProgress?.(100);
+    
+    return { url };
+  } catch (error) {
+    console.error('Error exporting video:', error);
+    throw error;
   }
-  
-  // Once "processing" is complete, export the video
-  return exportVideoWithInterpreter(options);
 };
 

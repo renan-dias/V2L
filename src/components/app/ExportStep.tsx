@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from '@/hooks/use-toast';
@@ -196,6 +195,7 @@ const ExportStep: React.FC<ExportStepProps> = ({
                 src={videoSource}
                 controls
                 className="w-full aspect-video"
+                playsInline
               >
                 Your browser does not support the video tag.
               </video>
@@ -208,7 +208,7 @@ const ExportStep: React.FC<ExportStepProps> = ({
               </div>
             </div>
             
-            <div className="p-4 bg-blue-50 border-t border-blue-100">
+            <div className="p-4 border-t">
               {currentInterpretation ? (
                 <div className="animate-fadeIn">
                   <p className="text-sm font-medium text-blue-800">Interpretação atual:</p>
