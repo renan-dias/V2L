@@ -1,12 +1,45 @@
+/**
+ * Serviço para manipular URLs do YouTube
+ */
 
 import { Subtitle } from '@/types/subtitle';
 
 const YOUTUBE_API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
 
+// Regex para validar URLs do YouTube em diferentes formatos
+const YOUTUBE_URL_REGEX = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
+const YOUTUBE_ID_REGEX = /^.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/|shorts\/)|(?:(?:watch)?\?v(?:i)?=|\&v(?:i)?=))([^#\&\?]*).*/;
+
+export interface YouTubeVideoInfo {
+  id: string;
+  url: string;
+  embedUrl: string;
+}
+
+export const validateYouTubeUrl = (url: string): boolean => {
+  return YOUTUBE_URL_REGEX.test(url);
+};
+
 export const extractVideoId = (url: string): string | null => {
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-  const match = url.match(regExp);
-  return (match && match[2].length === 11) ? match[2] : null;
+  const match = url.match(YOUTUBE_ID_REGEX);
+  return match ? match[1] : null;
+};
+
+export const getVideoInfo = (url: string): YouTubeVideoInfo | null => {
+  if (!validateYouTubeUrl(url)) {
+    return null;
+  }
+
+  const videoId = extractVideoId(url);
+  if (!videoId) {
+    return null;
+  }
+
+  return {
+    id: videoId,
+    url: `https://www.youtube.com/watch?v=${videoId}`,
+    embedUrl: `https://www.youtube.com/embed/${videoId}`
+  };
 };
 
 export const getVideoDetails = async (videoId: string) => {
