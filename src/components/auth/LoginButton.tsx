@@ -1,11 +1,13 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from './AuthProvider';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 
 export const LoginButton: React.FC = () => {
-  const { user, signIn, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleAuth = async () => {
     try {
@@ -15,15 +17,12 @@ export const LoginButton: React.FC = () => {
           title: "Deslogado com sucesso!",
           description: "Você foi deslogado da sua conta.",
         });
+        navigate('/');
       } else {
-        await signIn();
-        toast({
-          title: "Logado com sucesso!",
-          description: "Bem-vindo ao Video 2 Libras.",
-        });
+        navigate('/login');
       }
     } catch (error) {
-      console.error('Auth error:', error);
+      console.error('Erro na autenticação:', error);
       toast({
         title: "Erro na autenticação",
         description: error instanceof Error ? error.message : "Ocorreu um erro ao tentar autenticar.",
@@ -72,7 +71,7 @@ export const LoginButton: React.FC = () => {
               fill="#EA4335"
             />
           </svg>
-          <span>Entrar com Google</span>
+          <span>Entrar</span>
         </div>
       )}
     </Button>
