@@ -6,6 +6,7 @@ import { extractSubtitlesFromYoutube, extractSubtitlesFromVideo, Subtitle, forma
 import { useToast } from '@/hooks/use-toast';
 import { Pencil, Save, X, Play, Pause } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { extractVideoId, getVideoCaptions } from '@/services/youtubeService';
 
 interface CaptionsStepProps {
   videoFile: File | null;
@@ -90,36 +91,22 @@ const CaptionsStep: React.FC<CaptionsStepProps> = ({
     try {
       setIsProcessing(true);
       
-      // Simulate processing with progress updates
-      const totalSteps = 10;
-      for (let step = 1; step <= totalSteps; step++) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        setProgress((step / totalSteps) * 100);
+      if (videoSource.includes('youtube.com') || videoSource.includes('youtu.be')) {
+        // Process YouTube video
+        const videoId = extractVideoId(videoSource);
+        if (!videoId) {
+          throw new Error('Invalid YouTube URL');
+        }
+        
+        const extractedSubtitles = await getVideoCaptions(videoId);
+        setSubtitles(extractedSubtitles);
+      } else {
+        // Process local video
+        // Aqui você pode implementar a extração de legendas de vídeos locais
+        // usando uma biblioteca como whisper.js ou similar
+        throw new Error('Local video caption extraction not implemented yet');
       }
       
-      // Generate sample subtitles (in a real app, this would use a speech-to-text service)
-      const sampleSubtitles: Subtitle[] = [
-        {
-          id: '1',
-          startTime: 0,
-          endTime: 5,
-          text: 'Bem-vindo ao Video 2 Libras'
-        },
-        {
-          id: '2',
-          startTime: 5,
-          endTime: 10,
-          text: 'Uma ferramenta para tornar seus vídeos acessíveis'
-        },
-        {
-          id: '3',
-          startTime: 10,
-          endTime: 15,
-          text: 'Através da Língua Brasileira de Sinais'
-        }
-      ];
-      
-      setSubtitles(sampleSubtitles);
       setIsProcessing(false);
       
       toast({
@@ -132,7 +119,7 @@ const CaptionsStep: React.FC<CaptionsStepProps> = ({
       
       toast({
         title: "Erro ao processar vídeo",
-        description: "Não foi possível extrair as legendas do vídeo.",
+        description: error instanceof Error ? error.message : "Não foi possível extrair as legendas do vídeo.",
         variant: "destructive",
       });
     }

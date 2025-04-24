@@ -7,6 +7,8 @@ import { convertTextToLibras, InterpretationResult } from '@/services/geminiServ
 import { Pencil, Save, X, ArrowRight, Play, Pause, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { loadVLibrasScript, interpretTextWithVLibras, positionVLibrasWidget } from '@/services/vLibrasService';
+import { createVideoProject, updateVideoProject } from '@/services/firebaseService';
+import { getCurrentUser } from '@/services/authService';
 
 interface InterpretationStepProps {
   subtitles: Subtitle[];
@@ -29,6 +31,7 @@ const InterpretationStep: React.FC<InterpretationStepProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [interpretations, setInterpretations] = useState<InterpretationResult[]>([]);
+  const [projectId, setProjectId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editedText, setEditedText] = useState('');
   
@@ -129,29 +132,36 @@ const InterpretationStep: React.FC<InterpretationStepProps> = ({
     try {
       setIsProcessing(true);
       
-      // Simulate processing with progress updates
-      const totalSteps = subtitles.length;
-      let currentStep = 0;
-      
-      const results: InterpretationResult[] = [];
-      
-      for (const subtitle of subtitles) {
-        // Simulate API call to generate interpretation
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Generate a sample interpretation (in a real app, this would use an AI service)
-        results.push({
-          subtitleId: subtitle.id,
-          startTime: subtitle.startTime,
-          endTime: subtitle.endTime,
-          librasInterpretation: `Interpretação em Libras para: "${subtitle.text}"`
-        });
-        
-        currentStep++;
-        setProgress((currentStep / totalSteps) * 100);
+      // Get current user
+      const user = getCurrentUser();
+      if (!user) {
+        throw new Error('User not authenticated');
       }
       
+      // Create or update project in Firebase
+      if (!projectId) {
+        const newProjectId = await createVideoProject(user.uid, {
+          title: 'Novo Projeto',
+          description: 'Projeto criado em ' + new Date().toLocaleDateString(),
+          videoUrl: videoSource,
+          videoType: videoSource.includes('youtube.com') || videoSource.includes('youtu.be') ? 'youtube' : 'upload',
+          subtitles: subtitles,
+          interpretations: []
+        });
+        setProjectId(newProjectId);
+      }
+      
+      // Generate interpretations using Gemini
+      const results = await convertTextToLibras(subtitles);
       setInterpretations(results);
+      
+      // Update project in Firebase
+      if (projectId) {
+        await updateVideoProject(projectId, {
+          interpretations: results
+        });
+      }
+      
       setIsProcessing(false);
       
       toast({
@@ -164,7 +174,7 @@ const InterpretationStep: React.FC<InterpretationStepProps> = ({
       
       toast({
         title: "Erro ao gerar interpretações",
-        description: "Não foi possível gerar as interpretações em Libras.",
+        description: error instanceof Error ? error.message : "Não foi possível gerar as interpretações em Libras.",
         variant: "destructive",
       });
     }
