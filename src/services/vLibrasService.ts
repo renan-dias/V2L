@@ -1,7 +1,6 @@
 
-// Remove the global declaration since it conflicts with the one in global.d.ts
-// and replace with an import from the types file
-
+// Import VLibras type definition
+import type { VLibras } from '@/types/vLibras';
 import { Subtitle } from '@/types/subtitle';
 
 export const loadVLibrasScript = async (): Promise<void> => {
@@ -38,7 +37,7 @@ export const loadVLibrasScript = async (): Promise<void> => {
         }
 
         // Initialize VLibras
-        window.VLibras.widget.enable();
+        window.VLibras.Widget.enable();
 
         // Give it a moment to initialize
         setTimeout(() => {
@@ -58,17 +57,17 @@ export const loadVLibrasScript = async (): Promise<void> => {
 };
 
 export const interpretTextWithVLibras = (text: string): void => {
-  if (!window.VLibras || !window.VLibras.widget) {
+  if (!window.VLibras || !window.VLibras.Widget) {
     console.error('VLibras not initialized');
     return;
   }
 
   try {
     // Stop any current interpretation
-    window.VLibras.widget.stop();
+    window.VLibras.Widget.stop();
 
     // Interpret the new text
-    window.VLibras.widget.translate(text);
+    window.VLibras.Widget.translate(text);
   } catch (error) {
     console.error('Error interpreting text with VLibras:', error);
   }
@@ -77,7 +76,7 @@ export const interpretTextWithVLibras = (text: string): void => {
 export type VLibrasPosition = 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight';
 
 export const positionVLibrasWidget = (position: VLibrasPosition): void => {
-  if (!window.VLibras || !window.VLibras.widget) {
+  if (!window.VLibras || !window.VLibras.Widget) {
     console.error('VLibras not initialized');
     return;
   }

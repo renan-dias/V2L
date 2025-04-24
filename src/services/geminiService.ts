@@ -3,10 +3,11 @@
  * Service to interact with Google Gemini API for Libras interpretation
  */
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { Subtitle } from './subtitleService';
+import { Subtitle } from '@/types/subtitle';
 
-const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || '');
+// Use import.meta.env instead of process.env for Vite
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 export interface InterpretationResult {
   subtitleId: string;
