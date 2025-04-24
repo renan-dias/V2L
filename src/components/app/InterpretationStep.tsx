@@ -1,12 +1,12 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from '@/hooks/use-toast';
 import { Subtitle, formatTime } from '@/services/subtitleService';
 import { convertTextToLibras, InterpretationResult } from '@/services/geminiService';
-import { Pencil, Save, X, ArrowRight } from 'lucide-react';
+import { Pencil, Save, X, ArrowRight, Play, Pause, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { loadVLibrasScript, interpretTextWithVLibras, positionVLibrasWidget } from '@/services/vLibrasService';
 
 interface InterpretationStepProps {
   subtitles: Subtitle[];
@@ -21,78 +21,154 @@ const InterpretationStep: React.FC<InterpretationStepProps> = ({
   onInterpretationReady,
   onPrevious
 }) => {
-  const [interpretations, setInterpretations] = useState<InterpretationResult[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [activeSubtitle, setActiveSubtitle] = useState<Subtitle | null>(null);
+  const [isVLibrasLoaded, setIsVLibrasLoaded] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [interpretations, setInterpretations] = useState<InterpretationResult[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editedText, setEditedText] = useState('');
+  
+  const vLibrasContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   
+  // Load VLibras when component mounts
   useEffect(() => {
-    const generateInterpretations = async () => {
+    const initializeVLibras = async () => {
       try {
-        setIsLoading(true);
+        await loadVLibrasScript();
+        setIsVLibrasLoaded(true);
         
-        // Simulate progress updates
-        const totalSteps = subtitles.length;
-        let currentStep = 0;
-        
-        const updateProgress = () => {
-          currentStep += 1;
-          const newProgress = (currentStep / totalSteps) * 100;
-          setProgress(newProgress > 95 ? 95 : newProgress);
-        };
-        
-        // Initial progress update
-        setProgress(5);
-        
-        // Process in smaller batches to show progress
-        const batchSize = 3;
-        const results: InterpretationResult[] = [];
-        
-        for (let i = 0; i < subtitles.length; i += batchSize) {
-          const batch = subtitles.slice(i, i + batchSize);
-          
-          // Process the batch
-          const batchResults = await convertTextToLibras(batch);
-          results.push(...batchResults);
-          
-          // Update progress for each batch
-          updateProgress();
-          
-          // Artificial delay for UI
-          if (i + batchSize < subtitles.length) {
-            await new Promise(resolve => setTimeout(resolve, 800));
-          }
-        }
-        
-        // Set final progress and update state
-        setProgress(100);
-        
+        // Position the widget
         setTimeout(() => {
-          setInterpretations(results);
-          setIsLoading(false);
-          
-          toast({
-            title: "Interpretação concluída!",
-            description: `Foram geradas ${results.length} interpretações em Libras.`,
-          });
+          positionVLibrasWidget('bottomRight');
         }, 1000);
-        
       } catch (error) {
-        console.error("Error generating interpretations:", error);
-        setIsLoading(false);
+        console.error('Error loading VLibras:', error);
         
         toast({
-          title: "Erro na interpretação",
-          description: "Não foi possível gerar as interpretações em Libras.",
+          title: "Erro ao carregar VLibras",
+          description: "Não foi possível carregar o interpretador de Libras.",
           variant: "destructive",
         });
       }
     };
     
-    generateInterpretations();
-  }, [subtitles, toast]);
+    initializeVLibras();
+  }, [toast]);
+  
+  // Handle video playback
+  useEffect(() => {
+    if (!videoElement) return;
+    
+    const handleTimeUpdate = () => {
+      setCurrentTime(videoElement.currentTime);
+      
+      // Find the active subtitle based on current time
+      const currentSubtitle = subtitles.find(
+        subtitle => videoElement.currentTime >= subtitle.startTime && videoElement.currentTime <= subtitle.endTime
+      );
+      
+      if (currentSubtitle && (!activeSubtitle || currentSubtitle.id !== activeSubtitle.id)) {
+        setActiveSubtitle(currentSubtitle);
+        
+        // Find the corresponding interpretation
+        const currentInterpretation = interpretations.find(
+          interp => interp.subtitleId === currentSubtitle.id
+        );
+        
+        // Send the interpretation to VLibras
+        if (currentInterpretation && isVLibrasLoaded) {
+          interpretTextWithVLibras(currentInterpretation.librasInterpretation);
+        }
+      }
+    };
+    
+    const handlePlay = () => {
+      setIsPlaying(true);
+    };
+    
+    const handlePause = () => {
+      setIsPlaying(false);
+    };
+    
+    videoElement.addEventListener('timeupdate', handleTimeUpdate);
+    videoElement.addEventListener('play', handlePlay);
+    videoElement.addEventListener('pause', handlePause);
+    
+    return () => {
+      videoElement.removeEventListener('timeupdate', handleTimeUpdate);
+      videoElement.removeEventListener('play', handlePlay);
+      videoElement.removeEventListener('pause', handlePause);
+    };
+  }, [videoElement, subtitles, activeSubtitle, interpretations, isVLibrasLoaded]);
+  
+  // Format time in MM:SS format
+  const formatTime = (timeInSeconds: number): string => {
+    const minutes = Math.floor(timeInSeconds / 60);
+    const seconds = Math.floor(timeInSeconds % 60);
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+  
+  // Toggle play/pause
+  const togglePlayPause = () => {
+    if (!videoElement) return;
+    
+    if (isPlaying) {
+      videoElement.pause();
+    } else {
+      videoElement.play();
+    }
+  };
+  
+  // Process subtitles to generate interpretations
+  const processSubtitles = async () => {
+    try {
+      setIsProcessing(true);
+      
+      // Simulate processing with progress updates
+      const totalSteps = subtitles.length;
+      let currentStep = 0;
+      
+      const results: InterpretationResult[] = [];
+      
+      for (const subtitle of subtitles) {
+        // Simulate API call to generate interpretation
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Generate a sample interpretation (in a real app, this would use an AI service)
+        results.push({
+          subtitleId: subtitle.id,
+          startTime: subtitle.startTime,
+          endTime: subtitle.endTime,
+          librasInterpretation: `Interpretação em Libras para: "${subtitle.text}"`
+        });
+        
+        currentStep++;
+        setProgress((currentStep / totalSteps) * 100);
+      }
+      
+      setInterpretations(results);
+      setIsProcessing(false);
+      
+      toast({
+        title: "Interpretações geradas!",
+        description: "As interpretações em Libras foram geradas com sucesso.",
+      });
+    } catch (error) {
+      console.error('Error processing subtitles:', error);
+      setIsProcessing(false);
+      
+      toast({
+        title: "Erro ao gerar interpretações",
+        description: "Não foi possível gerar as interpretações em Libras.",
+        variant: "destructive",
+      });
+    }
+  };
   
   const handleEdit = (interpretation: InterpretationResult) => {
     setEditingId(interpretation.subtitleId);
@@ -121,128 +197,173 @@ const InterpretationStep: React.FC<InterpretationStepProps> = ({
     setEditedText('');
   };
   
+  // Handle continue
   const handleContinue = () => {
+    if (interpretations.length === 0) {
+      toast({
+        title: "Nenhuma interpretação",
+        description: "Por favor, gere as interpretações antes de continuar.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     onInterpretationReady(interpretations);
   };
   
   return (
     <div className="space-y-6">
-      {isLoading ? (
-        <motion.div 
-          className="p-8 rounded-lg bg-white shadow-md text-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h3 className="text-xl font-semibold mb-4">Gerando interpretações em Libras...</h3>
-          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
-            <motion.div 
-              className="bg-primary h-2.5 rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.5 }}
-            ></motion.div>
-          </div>
-          <p className="text-gray-600">
-            Estamos utilizando IA para gerar interpretações em Libras para cada legenda.
-            Isso pode levar alguns minutos.
-          </p>
-        </motion.div>
-      ) : (
-        <>
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="p-4 bg-gray-50 border-b flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Interpretações em Libras</h3>
-              <p className="text-sm text-gray-500">{interpretations.length} interpretações geradas</p>
-            </div>
-            
-            <div className="divide-y max-h-[500px] overflow-y-auto">
-              {interpretations.map((interpretation) => (
-                <motion.div 
-                  key={interpretation.subtitleId}
-                  className="p-4 hover:bg-gray-50 transition-colors"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs font-mono text-gray-500">
-                      {formatTime(interpretation.startTime)} - {formatTime(interpretation.endTime)}
-                    </span>
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      className="h-8 w-8 p-0"
-                      onClick={() => handleEdit(interpretation)}
-                      disabled={editingId !== null}
-                    >
-                      <Pencil size={14} />
-                    </Button>
-                  </div>
-                  
-                  <div className="mb-4">
-                    <p className="text-sm font-medium text-gray-500">Texto original:</p>
-                    <p className="border-l-2 border-gray-300 pl-3 py-1 text-gray-700">
-                      {interpretation.originalText}
-                    </p>
-                  </div>
-                  
-                  {editingId === interpretation.subtitleId ? (
-                    <div className="mt-3 space-y-3">
-                      <Textarea
-                        value={editedText}
-                        onChange={(e) => setEditedText(e.target.value)}
-                        className="min-h-[100px]"
-                      />
-                      <div className="flex justify-end gap-2">
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
-                          onClick={handleCancelEdit}
-                        >
-                          <X size={16} className="mr-1" /> Cancelar
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          onClick={handleSaveEdit}
-                        >
-                          <Save size={16} className="mr-1" /> Salvar
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="relative">
-                      <div className="absolute -left-3 top-1/2 -translate-y-1/2 text-blue-500">
-                        <ArrowRight size={16} />
-                      </div>
-                      <div className="bg-blue-50 border-l-2 border-blue-400 pl-3 py-2 rounded-r-md">
-                        <p className="text-sm font-medium text-blue-700">Interpretação em Libras:</p>
-                        <p className="text-gray-700">{interpretation.librasInterpretation}</p>
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              ))}
-            </div>
-          </div>
+      <div className="flex flex-col md:flex-row gap-6">
+        <div className="w-full md:w-3/5 bg-gray-100 rounded-lg overflow-hidden shadow-md">
+          {videoSource && (
+            <video 
+              src={videoSource.startsWith('http') ? videoSource : undefined}
+              ref={(el) => setVideoElement(el)}
+              controls
+              className="w-full aspect-video"
+              playsInline
+            >
+              Your browser does not support the video tag.
+            </video>
+          )}
           
-          <div className="flex justify-between">
+          <div 
+            ref={vLibrasContainerRef} 
+            className="absolute bottom-0 right-0 z-10"
+          >
+            {/* VLibras widget will be inserted here by the script */}
+          </div>
+        </div>
+        
+        <div className="w-full md:w-2/5 bg-white rounded-lg shadow-md p-4">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Controles do Vídeo</h3>
             <Button 
               variant="outline" 
-              onClick={onPrevious}
+              size="icon"
+              onClick={togglePlayPause}
             >
-              Voltar
-            </Button>
-            <Button 
-              onClick={handleContinue}
-              disabled={isLoading || interpretations.length === 0}
-              className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
-            >
-              Continuar
+              {isPlaying ? <Pause size={16} /> : <Play size={16} />}
             </Button>
           </div>
-        </>
-      )}
+          
+          <div className="mb-4">
+            <p className="text-sm text-gray-500">Tempo atual:</p>
+            <p className="text-xl font-mono">{formatTime(currentTime)}</p>
+          </div>
+          
+          {activeSubtitle && (
+            <motion.div 
+              className="p-3 bg-primary/10 border border-primary/20 rounded-md mb-4"
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.2 }}
+            >
+              <p className="text-sm text-gray-500">Legenda Atual:</p>
+              <p className="text-base font-medium">{activeSubtitle.text}</p>
+              
+              {interpretations.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-primary/20">
+                  <p className="text-sm text-gray-500">Interpretação em Libras:</p>
+                  <p className="text-base font-medium">
+                    {interpretations.find(interp => interp.subtitleId === activeSubtitle.id)?.librasInterpretation}
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          )}
+          
+          {!isProcessing && interpretations.length === 0 && (
+            <div className="text-center py-4">
+              <p className="mb-4 text-gray-700">
+                Clique no botão abaixo para gerar as interpretações em Libras.
+              </p>
+              <Button 
+                onClick={processSubtitles}
+                disabled={!isVLibrasLoaded}
+                className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+              >
+                Gerar Interpretações
+              </Button>
+            </div>
+          )}
+          
+          {isProcessing && (
+            <div className="text-center py-4">
+              <h4 className="text-base font-medium mb-3">Gerando interpretações...</h4>
+              <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                <div 
+                  className="bg-primary h-2.5 rounded-full transition-all duration-300 ease-in-out"
+                  style={{ width: `${progress}%` }}
+                ></div>
+              </div>
+              <p className="text-sm text-gray-600">Isso pode levar alguns minutos</p>
+            </div>
+          )}
+          
+          {interpretations.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium">Interpretações Geradas:</h4>
+                <div className="flex items-center text-green-600">
+                  <Check size={16} className="mr-1" />
+                  <span className="text-sm">{interpretations.length} interpretações</span>
+                </div>
+              </div>
+              
+              <div className="max-h-60 overflow-y-auto space-y-2">
+                {interpretations.map(interpretation => (
+                  <div 
+                    key={interpretation.subtitleId}
+                    className={`p-2 rounded-md ${
+                      activeSubtitle?.id === interpretation.subtitleId 
+                        ? 'bg-primary/10 border border-primary/20' 
+                        : 'bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs text-gray-500">
+                        {formatTime(interpretation.startTime)} - {formatTime(interpretation.endTime)}
+                      </span>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          if (videoElement) {
+                            videoElement.currentTime = interpretation.startTime;
+                            videoElement.play();
+                          }
+                        }}
+                      >
+                        <Play size={12} />
+                      </Button>
+                    </div>
+                    <p className="text-sm">{interpretation.librasInterpretation}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      <div className="flex justify-between">
+        <Button 
+          variant="outline" 
+          onClick={onPrevious}
+        >
+          Voltar
+        </Button>
+        
+        {interpretations.length > 0 && (
+          <Button 
+            onClick={handleContinue}
+            className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+          >
+            Continuar
+          </Button>
+        )}
+      </div>
     </div>
   );
 };
