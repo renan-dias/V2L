@@ -1,0 +1,48 @@
+# Configurações do Firebase - Exemplo
+# Crie um arquivo .env na raiz do projeto e adicione estas configurações
+
+# Credenciais do Firebase (obrigatórias)
+VITE_FIREBASE_API_KEY=sua_api_key
+VITE_FIREBASE_AUTH_DOMAIN=seu_projeto.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=seu_projeto
+VITE_FIREBASE_STORAGE_BUCKET=seu_projeto.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=seu_messaging_sender_id
+VITE_FIREBASE_APP_ID=1:123456789012:web:abc123def456
+
+# Configurações opcionais
+VITE_FIREBASE_DATABASE_URL=https://seu_projeto.firebaseio.com
+
+# Chave da API Gemini (para interpretação em Libras)
+VITE_GEMINI_API_KEY=sua_chave_gemini
+
+# Configurações de desenvolvimento
+# Defina como 'true' para usar emuladores locais do Firebase (recomendado para desenvolvimento)
+# VITE_USE_FIREBASE_EMULATORS=true
+
+# Instruções:
+# 1. Crie um arquivo ".env" na raiz do projeto
+# 2. Copie estas configurações para o arquivo .env
+# 3. Preencha com suas credenciais do Firebase (encontradas no console do Firebase)
+# 4. Para desenvolvimento local, configure os emuladores do Firebase conforme necessário
+# 5. As regras de segurança do Firebase precisam permitir leitura/escrita para usuários autenticados
+
+# Regras de segurança recomendadas para o Firebase Storage:
+# rules_version = '2';
+# service firebase.storage {
+#   match /b/{bucket}/o {
+#     match /videos/{userId}/{projectId}/{fileName} {
+#       allow read, write: if request.auth != null && request.auth.uid == userId;
+#     }
+#   }
+# }
+
+# Regras de segurança recomendadas para o Firestore:
+# rules_version = '2';
+# service cloud.firestore {
+#   match /databases/{database}/documents {
+#     match /projects/{projectId} {
+#       allow create: if request.auth != null;
+#       allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+#     }
+#   }
+# } 

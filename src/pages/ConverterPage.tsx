@@ -64,6 +64,11 @@ const ConverterPage: React.FC = () => {
         throw new Error('O arquivo de vídeo parece estar corrompido ou vazio.');
       }
 
+      // Se não estiver configurado, mostrar um erro mais específico
+      if (!isStorageConfigured) {
+        throw new Error('O Firebase Storage não está configurado corretamente. Configure o arquivo .env com suas credenciais do Firebase para habilitar o upload de vídeos.');
+      }
+
       const project = await createProject(user.uid, title, selectedFile);
       
       toast({
@@ -73,9 +78,41 @@ const ConverterPage: React.FC = () => {
 
       // Redirecionar para a página de processamento
       navigate(`/app/process/${project.id}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao criar projeto:', error);
-      // Mensagem de erro mais específica
+      
+      // Tratamento específico para erros de permissão
+      if (error.code === 'permission-denied' || 
+          error.code === 'storage/unauthorized' || 
+          error.message?.includes('permission') || 
+          error.message?.includes('permissions') ||
+          error.message?.includes('unauthorized') ||
+          error.message?.includes('Missing or insufficient permissions')) {
+        
+        const permissionError = 'Erro de permissão: Você não tem permissão para fazer upload de vídeos. Verifique se você está autenticado e se o Firebase está configurado corretamente.';
+        setError(permissionError);
+        
+        toast({
+          title: "Erro de permissão",
+          description: permissionError,
+          variant: "destructive",
+        });
+        
+        // Log detalhado para ajudar no debugging
+        console.error('Detalhes do erro de permissão:', {
+          errorCode: error.code,
+          errorMessage: error.message,
+          userAuth: !!user,
+          userId: user?.uid,
+          fileName: selectedFile?.name,
+          fileSize: selectedFile?.size,
+        });
+        
+        setIsUploading(false);
+        return;
+      }
+      
+      // Mensagem de erro mais específica para outros tipos de erro
       const errorMessage = error.message?.includes('Firebase') 
         ? 'Erro de conexão com o servidor. Verifique sua conexão com a internet e tente novamente.'
         : error.message || 'Ocorreu um erro ao fazer upload do vídeo. Por favor, tente novamente.';

@@ -12,7 +12,7 @@ import {
   deleteDoc
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, storage, isStorageConfigured } from '@/lib/firebase';
+import { db, storage, isStorageConfigured, checkFirebasePermissions } from '@/lib/firebase';
 import { Project } from '@/types/project';
 
 export const projectsCollection = collection(db, 'projects');
@@ -26,6 +26,12 @@ export const createProject = async (
     // Verificar se o Firebase está configurado corretamente
     if (!isStorageConfigured) {
       throw new Error('O Firebase Storage não está configurado corretamente. Verifique o arquivo .env com suas credenciais.');
+    }
+
+    // Verificar permissões do Firebase antes de continuar
+    const hasPermissions = await checkFirebasePermissions();
+    if (!hasPermissions) {
+      throw new Error('Permissões do Firebase insuficientes. Verifique a configuração das regras de segurança ou use emuladores em ambiente de desenvolvimento.');
     }
 
     // 1. Criar o documento do projeto
@@ -48,7 +54,10 @@ export const createProject = async (
       // Remover caracteres especiais e espaços do nome do arquivo
       const safeFileName = videoFile.name.replace(/[^a-zA-Z0-9.]/g, '_');
       
-      const videoRef = ref(storage, `videos/${userId}/${docRef.id}/${safeFileName}`);
+      const videoPath = `videos/${userId}/${docRef.id}/${safeFileName}`;
+      const videoRef = ref(storage, videoPath);
+      
+      console.log(`Tentando fazer upload para: ${videoPath}`);
       
       // Tentar fazer o upload
       const uploadResult = await uploadBytes(videoRef, videoFile);
@@ -81,9 +90,26 @@ export const createProject = async (
         metadata,
         status: 'processing',
       };
-    } catch (uploadError) {
+    } catch (uploadError: any) {
       // Em caso de erro no upload, marcar o projeto como erro e lançar exceção
       console.error('Erro específico no upload do vídeo:', uploadError);
+      
+      // Verificar se é um erro de permissão
+      if (uploadError.code === 'storage/unauthorized' || 
+          uploadError.message?.includes('permission') || 
+          uploadError.message?.includes('permissions') ||
+          uploadError.message?.includes('unauthorized')) {
+        
+        console.error('Erro de permissão detectado:', uploadError);
+        
+        // Atualizar o projeto com status de erro
+        await updateDoc(docRef, {
+          status: 'error',
+          error: 'Erro de permissão. O servidor não permite upload de arquivos.'
+        });
+        
+        throw new Error(`Erro de permissão: Não foi possível fazer upload do vídeo. Verifique se você tem as permissões necessárias.`);
+      }
       
       // Atualizar o projeto com status de erro
       await updateDoc(docRef, {
@@ -93,8 +119,20 @@ export const createProject = async (
       
       throw new Error(`Erro ao fazer upload do vídeo: ${uploadError.message || 'Falha no servidor'}`);
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao criar projeto:', error);
+    
+    // Verificar se é um erro de permissão
+    if (error.code === 'permission-denied' || 
+        error.code === 'storage/unauthorized' || 
+        error.message?.includes('permission') || 
+        error.message?.includes('permissions') ||
+        error.message?.includes('unauthorized') ||
+        error.message?.includes('Missing or insufficient permissions')) {
+      
+      throw new Error('Erro de permissão: Não foi possível criar ou atualizar o projeto. Verifique se você está autenticado e tem as permissões necessárias.');
+    }
+    
     throw error;
   }
 };
