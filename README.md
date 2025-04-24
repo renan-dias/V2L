@@ -13,7 +13,7 @@ O Video 2 Libras (V2L) é uma aplicação web inovadora que converte vídeos par
 
 - 🎥 Upload de vídeos MP4 ou diretamente via URL do YouTube
 - 📝 Extração e edição de legendas
-- 🔄 Conversão de legendas para interpretação em Libras
+- 🔄 Conversão de legendas para interpretação em Libras usando Gemini AI
 - 👨‍👩‍👧‍👦 Integração com VLibras para renderização do intérprete
 - 💾 Exportação do vídeo final com interpretação em Libras
 
@@ -23,16 +23,17 @@ O V2L possui um fluxo de trabalho de quatro etapas:
 
 1. **Upload do Vídeo**: Carregue seu vídeo MP4 ou forneça uma URL do YouTube
 2. **Extração de Legendas**: Obtenção automática ou manual das legendas do vídeo
-3. **Interpretação para Libras**: Transformação do texto em interpretação em Libras
+3. **Interpretação para Libras**: Transformação do texto em interpretação em Libras usando Gemini AI
 4. **Exportação**: Renderização e download do vídeo final com o intérprete de Libras
 
 ## Tecnologias Utilizadas
 
-- **Frontend**: React, TypeScript, Tailwind CSS
+- **Frontend**: React, TypeScript, Tailwind CSS, Framer Motion
 - **Estado**: TanStack Query (React Query)
 - **UI Components**: shadcn/ui
 - **Backend/BaaS**: Firebase (Firestore, Storage, Authentication)
 - **APIs**: Gemini AI, VLibras, YouTube Data API
+- **Renderização**: html2canvas para captura de tela
 
 ## Configuração do Projeto
 
@@ -63,8 +64,10 @@ Para rodar o projeto localmente, siga estas etapas:
    VITE_GOOGLE_API_KEY=seu-google-api-key
 
    # Gemini API Key
-   VITE_GEMINI_API_KEY=seu-gemini-api-key
+   VITE_GEMINI_API_KEY=sua-gemini-api-key
    ```
+
+   > **IMPORTANTE**: Você precisa ter uma chave API do Gemini para utilizar a funcionalidade de interpretação em Libras. Obtenha uma chave em [https://ai.google.dev/](https://ai.google.dev/)
 
 4. Inicie o servidor de desenvolvimento
    ```bash
@@ -72,6 +75,14 @@ Para rodar o projeto localmente, siga estas etapas:
    ```
 
 5. Acesse a aplicação em [http://localhost:8080](http://localhost:8080)
+
+## Como Usar
+
+1. Na página inicial, clique em "Acessar App" para ir para a página do aplicativo
+2. Escolha entre fazer upload de um arquivo de vídeo ou fornecer uma URL do YouTube
+3. Siga as etapas do fluxo de trabalho: extração de legendas, interpretação em Libras e exportação
+4. Visualize a prévia do vídeo com interpretação em Libras antes de exportar
+5. Faça o download do vídeo final ou compartilhe o link
 
 ## Contribuição
 
@@ -89,7 +100,7 @@ Este projeto está licenciado sob a licença MIT. Veja o arquivo `LICENSE` para 
 
 ## Contato
 
-Sua Nome - [@seu_twitter](https://twitter.com/seu_twitter) - email@example.com
+Seu Nome - [@seu_twitter](https://twitter.com/seu_twitter) - email@example.com
 
 Link do Projeto: [https://github.com/seu-usuario/video-2-libras](https://github.com/seu-usuario/video-2-libras)
 
