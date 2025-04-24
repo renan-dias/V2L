@@ -1,73 +1,98 @@
-# Welcome to your Lovable project
 
-## Project info
+# Video 2 Libras (V2L) - Conversor de Vídeo para Libras
 
-**URL**: https://lovable.dev/projects/a8dfd785-f3e5-415b-a61a-41a692fb30ab
+![Video 2 Libras Logo](https://img.shields.io/badge/V2L-Video%202%20Libras-blue)
+![Status do Projeto](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
+![Licença](https://img.shields.io/badge/licença-MIT-green)
 
-## How can I edit this code?
+## Sobre o Projeto
 
-There are several ways of editing your application.
+O Video 2 Libras (V2L) é uma aplicação web inovadora que converte vídeos para incluir um intérprete de Língua Brasileira de Sinais (Libras), tornando o conteúdo mais acessível para pessoas surdas ou com deficiência auditiva.
 
-**Use Lovable**
+### Características Principais
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/a8dfd785-f3e5-415b-a61a-41a692fb30ab) and start prompting.
+- 🎥 Upload de vídeos MP4 ou diretamente via URL do YouTube
+- 📝 Extração e edição de legendas
+- 🔄 Conversão de legendas para interpretação em Libras
+- 👨‍👩‍👧‍👦 Integração com VLibras para renderização do intérprete
+- 💾 Exportação do vídeo final com interpretação em Libras
 
-Changes made via Lovable will be committed automatically to this repo.
+## Fluxo de Trabalho
 
-**Use your preferred IDE**
+O V2L possui um fluxo de trabalho de quatro etapas:
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+1. **Upload do Vídeo**: Carregue seu vídeo MP4 ou forneça uma URL do YouTube
+2. **Extração de Legendas**: Obtenção automática ou manual das legendas do vídeo
+3. **Interpretação para Libras**: Transformação do texto em interpretação em Libras
+4. **Exportação**: Renderização e download do vídeo final com o intérprete de Libras
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Tecnologias Utilizadas
 
-Follow these steps:
+- **Frontend**: React, TypeScript, Tailwind CSS
+- **Estado**: TanStack Query (React Query)
+- **UI Components**: shadcn/ui
+- **Backend/BaaS**: Firebase (Firestore, Storage, Authentication)
+- **APIs**: Gemini AI, VLibras, YouTube Data API
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Configuração do Projeto
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Para rodar o projeto localmente, siga estas etapas:
 
-# Step 3: Install the necessary dependencies.
-npm i
+1. Clone o repositório
+   ```bash
+   git clone https://github.com/seu-usuario/video-2-libras.git
+   cd video-2-libras
+   ```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+2. Instale as dependências
+   ```bash
+   npm install
+   ```
 
-**Edit a file directly in GitHub**
+3. Configure as variáveis de ambiente (.env)
+   ```
+   # Firebase Configuration
+   VITE_FIREBASE_API_KEY=seu-api-key
+   VITE_FIREBASE_AUTH_DOMAIN=seu-auth-domain
+   VITE_FIREBASE_PROJECT_ID=seu-project-id
+   VITE_FIREBASE_STORAGE_BUCKET=seu-storage-bucket
+   VITE_FIREBASE_MESSAGING_SENDER_ID=seu-sender-id
+   VITE_FIREBASE_APP_ID=seu-app-id
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+   # Google API Keys
+   VITE_GOOGLE_API_KEY=seu-google-api-key
 
-**Use GitHub Codespaces**
+   # Gemini API Key
+   VITE_GEMINI_API_KEY=seu-gemini-api-key
+   ```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+4. Inicie o servidor de desenvolvimento
+   ```bash
+   npm run dev
+   ```
 
-## What technologies are used for this project?
+5. Acesse a aplicação em [http://localhost:8080](http://localhost:8080)
 
-This project is built with:
+## Contribuição
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Contribuições são sempre bem-vindas! Para contribuir:
 
-## How can I deploy this project?
+1. Faça um Fork do projeto
+2. Crie uma Branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a Branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
 
-Simply open [Lovable](https://lovable.dev/projects/a8dfd785-f3e5-415b-a61a-41a692fb30ab) and click on Share -> Publish.
+## Licença
 
-## Can I connect a custom domain to my Lovable project?
+Este projeto está licenciado sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
 
-Yes, you can!
+## Contato
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Sua Nome - [@seu_twitter](https://twitter.com/seu_twitter) - email@example.com
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Link do Projeto: [https://github.com/seu-usuario/video-2-libras](https://github.com/seu-usuario/video-2-libras)
+
+---
+
+Desenvolvido com ❤️ para a comunidade surda brasileira.
