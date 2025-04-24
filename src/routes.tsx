@@ -5,6 +5,7 @@ import LoginPage from '@/pages/LoginPage';
 import AppPage from '@/pages/AppPage';
 import DashboardPage from '@/pages/DashboardPage';
 import ConverterPage from '@/pages/ConverterPage';
+import ProcessPage from '@/pages/ProcessPage';
 import Index from '@/pages/Index';
 import NotFound from '@/pages/NotFound';
 import TermsPage from '@/pages/TermsPage';
@@ -44,6 +45,7 @@ const AppRoutes: React.FC = () => {
         <Route index element={<Navigate to="/app/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="converter" element={<ConverterPage />} />
+        <Route path="process/:projectId" element={<ProcessPage />} />
       </Route>
 
       <Route path="/" element={<Navigate to="/app/dashboard" replace />} />

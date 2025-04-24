@@ -57,13 +57,11 @@ const ConverterPage: React.FC = () => {
       
       toast({
         title: "Projeto criado com sucesso!",
-        description: "Seu vídeo está sendo processado. Você será redirecionado para o dashboard.",
+        description: "Redirecionando para o fluxo de processamento.",
       });
 
-      // Redirecionar para o dashboard após 2 segundos
-      setTimeout(() => {
-        navigate('/app/dashboard');
-      }, 2000);
+      // Redirecionar para a página de processamento
+      navigate(`/app/process/${project.id}`);
     } catch (error) {
       console.error('Erro ao criar projeto:', error);
       setError('Ocorreu um erro ao fazer upload do vídeo. Por favor, tente novamente.');
