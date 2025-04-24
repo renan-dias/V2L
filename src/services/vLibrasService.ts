@@ -1,9 +1,8 @@
 
-declare global {
-  interface Window {
-    VLibras: any;
-  }
-}
+// Remove the global declaration since it conflicts with the one in global.d.ts
+// and replace with an import from the types file
+
+import { Subtitle } from '@/types/subtitle';
 
 export const loadVLibrasScript = async (): Promise<void> => {
   return new Promise((resolve, reject) => {

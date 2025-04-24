@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from '@/hooks/use-toast';
-import { Subtitle, formatTime } from '@/services/subtitleService';
+import { Subtitle } from '@/types/subtitle';
 import { convertTextToLibras, InterpretationResult } from '@/services/geminiService';
 import { Pencil, Save, X, ArrowRight, Play, Pause, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -32,7 +33,7 @@ const InterpretationStep: React.FC<InterpretationStepProps> = ({
   const [progress, setProgress] = useState(0);
   const [interpretations, setInterpretations] = useState<InterpretationResult[]>([]);
   const [projectId, setProjectId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editedText, setEditedText] = useState('');
   
   const vLibrasContainerRef = useRef<HTMLDivElement>(null);
@@ -141,6 +142,7 @@ const InterpretationStep: React.FC<InterpretationStepProps> = ({
       // Create or update project in Firebase
       if (!projectId) {
         const newProjectId = await createVideoProject(user.uid, {
+          userId: user.uid, // Add userId to fix the TypeScript error
           title: 'Novo Projeto',
           description: 'Projeto criado em ' + new Date().toLocaleDateString(),
           videoUrl: videoSource,
@@ -163,6 +165,8 @@ const InterpretationStep: React.FC<InterpretationStepProps> = ({
       }
       
       setIsProcessing(false);
+      // Set progress to 100% when done
+      setProgress(100);
       
       toast({
         title: "Interpretações geradas!",
