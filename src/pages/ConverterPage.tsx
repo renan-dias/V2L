@@ -10,6 +10,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { createProject } from '@/services/projectService';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { isStorageConfigured } from '@/lib/firebase';
+import FirebaseConfigHelp from '@/components/FirebaseConfigHelp';
 
 const ConverterPage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -167,15 +168,19 @@ const ConverterPage: React.FC = () => {
   return (
     <div className="p-6">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Converter Vídeo para Libras</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Converter Vídeo para Libras</h1>
+          {(!isStorageConfigured || error) && <FirebaseConfigHelp />}
+        </div>
         
         {!isStorageConfigured && (
           <Alert variant="warning" className="mb-6">
             <Info className="h-4 w-4" />
             <AlertTitle>Modo de demonstração</AlertTitle>
-            <AlertDescription>
-              O aplicativo está rodando em modo de demonstração. O upload de vídeo pode não funcionar corretamente.
-              Configure o Firebase para utilizar todas as funcionalidades.
+            <AlertDescription className="flex flex-col gap-2">
+              <p>O aplicativo está rodando em modo de demonstração. O upload de vídeo pode não funcionar corretamente.
+              Configure o Firebase para utilizar todas as funcionalidades.</p>
+              <p className="text-xs">Consulte o arquivo <span className="font-mono">firebase-config.example</span> para instruções detalhadas.</p>
             </AlertDescription>
           </Alert>
         )}
@@ -220,7 +225,14 @@ const ConverterPage: React.FC = () => {
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Erro</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription className="space-y-2">
+                    <p>{error}</p>
+                    {error.includes('permissão') && (
+                      <div className="pt-2">
+                        <p className="text-xs mb-2">Este erro pode ser causado por configurações incorretas do Firebase. Clique em "Ajuda com Configuração" para mais informações.</p>
+                      </div>
+                    )}
+                  </AlertDescription>
                 </Alert>
               )}
 
