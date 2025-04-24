@@ -1,8 +1,9 @@
+
 /**
  * Service to interact with Google Gemini API for Libras interpretation
  */
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { Subtitle } from '@/types/subtitle';
+import { Subtitle } from './subtitleService';
 
 const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || '');
@@ -31,21 +32,18 @@ export const convertTextToLibras = async (subtitles: Subtitle[]): Promise<Interp
     const results: InterpretationResult[] = [];
     
     for (const subtitle of subtitles) {
-      const prompt = `${SYSTEM_PROMPT}\n\nTexto a ser interpretado: "${subtitle.text}"`;
+      const prompt = `${SYSTEM_PROMPT}\n\nTexto: "${subtitle.text}"\n\nInterpretação em Libras:`;
       
       const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const interpretation = response.text();
+      const response = result.response;
+      const text = response.text();
       
       results.push({
         subtitleId: subtitle.id,
         startTime: subtitle.startTime,
         endTime: subtitle.endTime,
-        librasInterpretation: interpretation
+        librasInterpretation: text.trim()
       });
-      
-      // Adiciona um pequeno delay para evitar rate limiting
-      await new Promise(resolve => setTimeout(resolve, 1000));
     }
     
     return results;
@@ -54,4 +52,3 @@ export const convertTextToLibras = async (subtitles: Subtitle[]): Promise<Interp
     throw error;
   }
 };
-

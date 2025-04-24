@@ -1,115 +1,121 @@
-/**
- * Service to interact with VLibras for rendering an avatar interpreter
- */
 
-// Load VLibras script dynamically
-export const loadVLibrasScript = (): Promise<void> => {
+declare global {
+  interface Window {
+    VLibras: any;
+  }
+}
+
+export const loadVLibrasScript = async (): Promise<void> => {
   return new Promise((resolve, reject) => {
-    if (document.getElementById('vLibrasScript')) {
-      resolve();
-      return;
-    }
+    try {
+      // Check if VLibras is already loaded
+      if (document.getElementById('vlibras-script')) {
+        if (window.VLibras) {
+          resolve();
+        } else {
+          // Wait for it to initialize
+          setTimeout(() => {
+            if (window.VLibras) {
+              resolve();
+            } else {
+              reject(new Error('VLibras failed to initialize'));
+            }
+          }, 2000);
+        }
+        return;
+      }
 
-    const script = document.createElement('script');
-    script.id = 'vLibrasScript';
-    script.src = 'https://vlibras.gov.br/app/vlibras-plugin.js';
-    script.async = true;
-    script.onload = () => {
-      // Initialize VLibras after loading
-      const vLibrasScript = document.createElement('script');
-      vLibrasScript.textContent = `
-        new window.VLibras.Widget('https://vlibras.gov.br/app');
-        window.addEventListener('load', function() {
-          const widget = document.querySelector('.vw-plugin-wrapper');
-          if (widget) {
-            widget.style.position = 'fixed';
-            widget.style.zIndex = '9999';
-            widget.style.bottom = '20px';
-            widget.style.right = '20px';
-          }
-        });
-      `;
-      document.body.appendChild(vLibrasScript);
-      resolve();
-    };
-    script.onerror = reject;
-    document.body.appendChild(script);
+      // Create script element
+      const script = document.createElement('script');
+      script.id = 'vlibras-script';
+      script.src = 'https://vlibras.gov.br/app/vlibras-plugin.js';
+      script.async = true;
+
+      // Initialize VLibras when script is loaded
+      script.onload = () => {
+        if (!window.VLibras) {
+          reject(new Error('VLibras not found'));
+          return;
+        }
+
+        // Initialize VLibras
+        window.VLibras.widget.enable();
+
+        // Give it a moment to initialize
+        setTimeout(() => {
+          resolve();
+        }, 1000);
+      };
+
+      script.onerror = () => {
+        reject(new Error('Failed to load VLibras script'));
+      };
+
+      document.body.appendChild(script);
+    } catch (error) {
+      reject(error);
+    }
   });
 };
 
-// Check if VLibras is loaded
-export const isVLibrasLoaded = (): boolean => {
-  return !!window.VLibras;
-};
-
-// Send text to VLibras for interpretation
 export const interpretTextWithVLibras = (text: string): void => {
-  if (!isVLibrasLoaded()) {
-    console.error('VLibras is not loaded');
+  if (!window.VLibras || !window.VLibras.widget) {
+    console.error('VLibras not initialized');
     return;
   }
 
   try {
-    window.VLibras.Widget.translate(text);
+    // Stop any current interpretation
+    window.VLibras.widget.stop();
+
+    // Interpret the new text
+    window.VLibras.widget.translate(text);
   } catch (error) {
-    console.error('Error sending text to VLibras:', error);
+    console.error('Error interpreting text with VLibras:', error);
   }
 };
 
-// Helper to customize the VLibras widget position
-export const positionVLibrasWidget = (
-  position: 'bottomRight' | 'bottomLeft' | 'topRight' | 'topLeft' = 'bottomRight'
-): void => {
-  if (!isVLibrasLoaded()) {
-    console.error('VLibras is not loaded');
-    return;
-  }
-  
-  // Get the widget container
-  const widgetContainer = document.querySelector('.vw-plugin-wrapper') as HTMLElement;
-  
-  if (!widgetContainer) {
-    console.error('VLibras widget container not found');
-    return;
-  }
-  
-  // Reset any custom positioning
-  widgetContainer.style.position = 'fixed';
-  widgetContainer.style.zIndex = '9999';
-  widgetContainer.style.top = '';
-  widgetContainer.style.bottom = '';
-  widgetContainer.style.left = '';
-  widgetContainer.style.right = '';
-  
-  // Apply new position
-  switch (position) {
-    case 'bottomRight':
-      widgetContainer.style.bottom = '20px';
-      widgetContainer.style.right = '20px';
-      break;
-    case 'bottomLeft':
-      widgetContainer.style.bottom = '20px';
-      widgetContainer.style.left = '20px';
-      break;
-    case 'topRight':
-      widgetContainer.style.top = '20px';
-      widgetContainer.style.right = '20px';
-      break;
-    case 'topLeft':
-      widgetContainer.style.top = '20px';
-      widgetContainer.style.left = '20px';
-      break;
-  }
-};
+export type VLibrasPosition = 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight';
 
-// Toggle VLibras widget visibility
-export const toggleVLibrasVisibility = (show: boolean): void => {
-  const widgetContainer = document.querySelector('.vw-plugin-wrapper') as HTMLElement;
-  
-  if (!widgetContainer) {
-    console.error('VLibras widget container not found');
+export const positionVLibrasWidget = (position: VLibrasPosition): void => {
+  if (!window.VLibras || !window.VLibras.widget) {
+    console.error('VLibras not initialized');
     return;
   }
-  
-  widgetContainer.style.display = show ? 'block' : 'none';
+
+  try {
+    const widgetElement = document.querySelector('.vw-plugin-wrapper') as HTMLElement;
+    if (!widgetElement) {
+      console.error('VLibras widget element not found');
+      return;
+    }
+
+    // Reset position
+    widgetElement.style.removeProperty('top');
+    widgetElement.style.removeProperty('bottom');
+    widgetElement.style.removeProperty('left');
+    widgetElement.style.removeProperty('right');
+
+    // Apply new position
+    switch (position) {
+      case 'topLeft':
+        widgetElement.style.top = '20px';
+        widgetElement.style.left = '20px';
+        break;
+      case 'topRight':
+        widgetElement.style.top = '20px';
+        widgetElement.style.right = '20px';
+        break;
+      case 'bottomLeft':
+        widgetElement.style.bottom = '20px';
+        widgetElement.style.left = '20px';
+        break;
+      case 'bottomRight':
+        widgetElement.style.bottom = '20px';
+        widgetElement.style.right = '20px';
+        break;
+    }
+  } catch (error) {
+    console.error('Error positioning VLibras widget:', error);
+  }
 };

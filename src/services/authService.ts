@@ -1,3 +1,4 @@
+
 import { 
   getAuth, 
   signInWithPopup, 
@@ -6,9 +7,8 @@ import {
   onAuthStateChanged,
   User
 } from 'firebase/auth';
-import { app } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
 
-const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
 export const signInWithGoogle = async (): Promise<User> => {

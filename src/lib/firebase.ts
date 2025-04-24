@@ -29,7 +29,7 @@ const firebaseConfig = hasValidFirebaseConfig ? {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+export const app = initializeApp(firebaseConfig);
 
 // Initialize Firebase services
 export const auth = getAuth(app);

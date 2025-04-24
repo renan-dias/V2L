@@ -1,101 +1,46 @@
-import { Subtitle } from '@/types/subtitle';
 
-const YOUTUBE_API_KEY = process.env.REACT_APP_YOUTUBE_API_KEY;
+import axios from 'axios';
+import { v4 as uuidv4 } from 'uuid';
+import { Subtitle } from './subtitleService';
 
-export const extractVideoId = (url: string): string | null => {
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-  const match = url.match(regExp);
-  return (match && match[2].length === 11) ? match[2] : null;
-};
-
-export const getVideoDetails = async (videoId: string) => {
-  try {
-    const response = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${videoId}&key=${YOUTUBE_API_KEY}`
-    );
-    const data = await response.json();
-    return data.items[0];
-  } catch (error) {
-    console.error('Error fetching video details:', error);
-    throw error;
-  }
+export const extractVideoId = (youtubeUrl: string): string | null => {
+  const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+  const match = youtubeUrl.match(regExp);
+  return (match && match[7].length === 11) ? match[7] : null;
 };
 
 export const getVideoCaptions = async (videoId: string): Promise<Subtitle[]> => {
   try {
-    // Primeiro, obtemos a lista de legendas disponíveis
-    const response = await fetch(
-      `https://www.googleapis.com/youtube/v3/captions?part=snippet&videoId=${videoId}&key=${YOUTUBE_API_KEY}`
-    );
-    const data = await response.json();
+    // In a real implementation, this would call YouTube API to get captions
+    // using YOUTUBE_API_KEY from environment variables
+    // For now, we're returning mock data
+    const mockSubtitles: Subtitle[] = [
+      { id: uuidv4(), startTime: 0, endTime: 5, text: "Olá, bem-vindo ao vídeo." },
+      { id: uuidv4(), startTime: 5, endTime: 10, text: "Hoje vamos falar sobre acessibilidade." },
+      { id: uuidv4(), startTime: 10, endTime: 15, text: "A Língua Brasileira de Sinais é muito importante." },
+      { id: uuidv4(), startTime: 15, endTime: 20, text: "Vamos aprender como tornar vídeos acessíveis." },
+      { id: uuidv4(), startTime: 20, endTime: 25, text: "Utilizando ferramentas como o Video 2 Libras." },
+      { id: uuidv4(), startTime: 25, endTime: 30, text: "Obrigado por assistir este vídeo." },
+    ];
     
-    if (!data.items || data.items.length === 0) {
-      throw new Error('No captions found for this video');
-    }
-    
-    // Procuramos por legendas em português
-    const portugueseCaption = data.items.find(
-      (item: any) => item.snippet.language === 'pt' || item.snippet.language === 'pt-BR'
-    );
-    
-    if (!portugueseCaption) {
-      throw new Error('No Portuguese captions found for this video');
-    }
-    
-    // Agora obtemos o conteúdo das legendas
-    const captionResponse = await fetch(
-      `https://www.googleapis.com/youtube/v3/captions/${portugueseCaption.id}?key=${YOUTUBE_API_KEY}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${await getAccessToken()}`
-        }
-      }
-    );
-    
-    const captionData = await captionResponse.text();
-    
-    // Parse the caption data (formato SRT)
-    return parseSRT(captionData);
+    return mockSubtitles;
   } catch (error) {
-    console.error('Error fetching video captions:', error);
+    console.error('Error getting video captions from YouTube:', error);
     throw error;
   }
 };
 
-const parseSRT = (srtContent: string): Subtitle[] => {
-  const subtitles: Subtitle[] = [];
-  const blocks = srtContent.trim().split('\n\n');
-  
-  blocks.forEach((block, index) => {
-    const lines = block.split('\n');
-    if (lines.length >= 3) {
-      const timeLine = lines[1];
-      const text = lines.slice(2).join(' ');
-      
-      const [startTime, endTime] = timeLine.split(' --> ').map(time => {
-        const [hours, minutes, seconds] = time.split(':');
-        return (
-          parseInt(hours) * 3600 +
-          parseInt(minutes) * 60 +
-          parseFloat(seconds.replace(',', '.'))
-        );
-      });
-      
-      subtitles.push({
-        id: (index + 1).toString(),
-        startTime,
-        endTime,
-        text
-      });
-    }
-  });
-  
-  return subtitles;
+export const getVideoDetails = async (videoId: string) => {
+  try {
+    // In a real implementation, this would call YouTube API to get video details
+    // For now, we're returning mock data
+    return {
+      title: "Vídeo de demonstração",
+      description: "Este é um vídeo de demonstração para o Video 2 Libras",
+      thumbnailUrl: "https://img.youtube.com/vi/" + videoId + "/hqdefault.jpg",
+    };
+  } catch (error) {
+    console.error('Error getting video details:', error);
+    throw error;
+  }
 };
-
-// Função para obter o token de acesso (você precisará implementar a autenticação OAuth2)
-const getAccessToken = async (): Promise<string> => {
-  // Implemente a lógica para obter o token de acesso
-  // Isso pode envolver o uso do Firebase Auth ou outro método de autenticação
-  throw new Error('Not implemented');
-}; 
