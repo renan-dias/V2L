@@ -1,114 +1,57 @@
-
 /**
  * Service to interact with Google Gemini API for Libras interpretation
  */
-import { Subtitle } from './subtitleService';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { Subtitle } from '@/types/subtitle';
+
+const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || '');
 
 export interface InterpretationResult {
-  subtitleId: number;
+  subtitleId: string;
   startTime: number;
   endTime: number;
-  originalText: string;
   librasInterpretation: string;
 }
 
-// Function to convert regular text to Libras interpretation using Gemini API
-export const convertTextToLibras = async (
-  subtitles: Subtitle[]
-): Promise<InterpretationResult[]> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  
-  if (!apiKey) {
-    throw new Error('Gemini API key is not set. Please set VITE_GEMINI_API_KEY in .env file');
-  }
-  
+const SYSTEM_PROMPT = `Você é um especialista em Língua Brasileira de Sinais (Libras).
+Sua tarefa é converter o texto em português para uma interpretação em Libras.
+Considere:
+1. A gramática específica da Libras
+2. Os sinais mais apropriados para cada conceito
+3. A estrutura espacial da Libras
+4. Os classificadores quando necessário
+5. A expressão facial e corporal adequada
+
+Forneça a interpretação em um formato que possa ser usado pelo VLibras.`;
+
+export const convertTextToLibras = async (subtitles: Subtitle[]): Promise<InterpretationResult[]> => {
   try {
-    const interpretations: InterpretationResult[] = [];
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const results: InterpretationResult[] = [];
     
-    // Process in batches to avoid overloading the API
-    const batchSize = 5;
-    
-    for (let i = 0; i < subtitles.length; i += batchSize) {
-      const batch = subtitles.slice(i, i + batchSize);
+    for (const subtitle of subtitles) {
+      const prompt = `${SYSTEM_PROMPT}\n\nTexto a ser interpretado: "${subtitle.text}"`;
       
-      // Process each subtitle in the batch
-      const batchPromises = batch.map(async (subtitle) => {
-        // Construct the prompt for Gemini API
-        const prompt = `
-          Você é um intérprete de Libras (Língua Brasileira de Sinais) fluente. 
-          Sua tarefa é converter o seguinte texto para uma interpretação em Libras, 
-          descrevendo como esse texto seria sinalizado em Libras. 
-          Não traduza palavra por palavra, mas sim transmita o sentido completo 
-          da mensagem seguindo a estrutura gramatical de Libras.
-          
-          Texto original: "${subtitle.text}"
-          
-          Formato de resposta: Descreva apenas os sinais em Libras, sem explicações adicionais.
-        `;
-        
-        // Call Gemini API
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    {
-                      text: prompt
-                    }
-                  ]
-                }
-              ]
-            })
-          }
-        );
-        
-        if (!response.ok) {
-          throw new Error(`Gemini API error: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        
-        // Extract the interpretation from the Gemini response
-        const librasInterpretation = data.candidates?.[0]?.content?.parts?.[0]?.text || 
-          "SINAL-ERRO INTERPRETAÇÃO NÃO-CONSEGUIR";
-        
-        return {
-          subtitleId: subtitle.id,
-          startTime: subtitle.startTime,
-          endTime: subtitle.endTime,
-          originalText: subtitle.text,
-          librasInterpretation: librasInterpretation
-        };
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const interpretation = response.text();
+      
+      results.push({
+        subtitleId: subtitle.id,
+        startTime: subtitle.startTime,
+        endTime: subtitle.endTime,
+        librasInterpretation: interpretation
       });
       
-      // Wait for all prompts in the batch to be processed
-      const batchResults = await Promise.all(batchPromises);
-      interpretations.push(...batchResults);
-      
-      // Small delay between batches to respect API rate limits
-      if (i + batchSize < subtitles.length) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
+      // Adiciona um pequeno delay para evitar rate limiting
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
     
-    return interpretations;
+    return results;
   } catch (error) {
     console.error('Error converting text to Libras:', error);
-    
-    // Return some simulated data in case of error
-    return subtitles.map(subtitle => ({
-      subtitleId: subtitle.id,
-      startTime: subtitle.startTime,
-      endTime: subtitle.endTime,
-      originalText: subtitle.text,
-      librasInterpretation: `SINAL-PESSOA SINAL-COMUNICAR ${subtitle.text.toUpperCase()}`
-    }));
+    throw error;
   }
 };
 
