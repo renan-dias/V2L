@@ -1,4 +1,3 @@
-
 import { initializeApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
@@ -29,7 +28,7 @@ const firebaseConfig = hasValidFirebaseConfig ? {
 };
 
 // Initialize Firebase
-export const app = initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
 
 // Initialize Firebase services
 export const auth = getAuth(app);
