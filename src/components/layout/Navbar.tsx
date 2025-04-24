@@ -8,7 +8,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [activeSection, setActiveSection] = useState('home');
+  const [activeSection, setActiveSection] = useState('sobre');
   const { user } = useAuth();
   const location = useLocation();
 
@@ -17,7 +17,7 @@ const Navbar: React.FC = () => {
       setIsScrolled(window.scrollY > 10);
       
       // Atualiza a seção ativa baseado no scroll
-      const sections = ['home', 'sobre', 'como-funciona', 'converter'];
+      const sections = ['sobre', 'como-funciona', 'converter'];
       const currentSection = sections.find(section => {
         const element = document.getElementById(section);
         if (element) {
@@ -66,13 +66,6 @@ const Navbar: React.FC = () => {
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center space-x-8">
           <button 
-            onClick={() => scrollToSection('home')} 
-            className={`font-medium transition-colors ${isActive('home')}`}
-            aria-current={activeSection === 'home' ? 'page' : undefined}
-          >
-            Home
-          </button>
-          <button 
             onClick={() => scrollToSection('sobre')} 
             className={`font-medium transition-colors ${isActive('sobre')}`}
             aria-current={activeSection === 'sobre' ? 'page' : undefined}
@@ -93,36 +86,7 @@ const Navbar: React.FC = () => {
           >
             Converter
           </button>
-          <Link 
-            to="/termos" 
-            className={`font-medium transition-colors ${location.pathname === '/termos' ? 'text-primary font-semibold' : 'text-gray-600 hover:text-primary'}`}
-            aria-current={location.pathname === '/termos' ? 'page' : undefined}
-          >
-            Termos
-          </Link>
-          <Link 
-            to="/privacidade" 
-            className={`font-medium transition-colors ${location.pathname === '/privacidade' ? 'text-primary font-semibold' : 'text-gray-600 hover:text-primary'}`}
-            aria-current={location.pathname === '/privacidade' ? 'page' : undefined}
-          >
-            Privacidade
-          </Link>
-          <Link 
-            to="/cookies" 
-            className={`font-medium transition-colors ${location.pathname === '/cookies' ? 'text-primary font-semibold' : 'text-gray-600 hover:text-primary'}`}
-            aria-current={location.pathname === '/cookies' ? 'page' : undefined}
-          >
-            Cookies
-          </Link>
-          {user ? (
-            <Button asChild>
-              <Link to="/app" className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity">
-                Meus Projetos
-              </Link>
-            </Button>
-          ) : (
-            <LoginButton />
-          )}
+          <LoginButton />
         </div>
 
         {/* Mobile Menu Button */}
@@ -147,14 +111,6 @@ const Navbar: React.FC = () => {
         >
           <div className="container mx-auto px-4 py-4 space-y-4">
             <button 
-              onClick={() => scrollToSection('home')} 
-              className={`block w-full text-left font-medium transition-colors ${isActive('home')}`}
-              role="menuitem"
-              aria-current={activeSection === 'home' ? 'page' : undefined}
-            >
-              Home
-            </button>
-            <button 
               onClick={() => scrollToSection('sobre')} 
               className={`block w-full text-left font-medium transition-colors ${isActive('sobre')}`}
               role="menuitem"
@@ -178,39 +134,7 @@ const Navbar: React.FC = () => {
             >
               Converter
             </button>
-            <Link 
-              to="/termos" 
-              className={`block w-full text-left font-medium transition-colors ${location.pathname === '/termos' ? 'text-primary font-semibold' : 'text-gray-600 hover:text-primary'}`}
-              role="menuitem"
-              aria-current={location.pathname === '/termos' ? 'page' : undefined}
-            >
-              Termos
-            </Link>
-            <Link 
-              to="/privacidade" 
-              className={`block w-full text-left font-medium transition-colors ${location.pathname === '/privacidade' ? 'text-primary font-semibold' : 'text-gray-600 hover:text-primary'}`}
-              role="menuitem"
-              aria-current={location.pathname === '/privacidade' ? 'page' : undefined}
-            >
-              Privacidade
-            </Link>
-            <Link 
-              to="/cookies" 
-              className={`block w-full text-left font-medium transition-colors ${location.pathname === '/cookies' ? 'text-primary font-semibold' : 'text-gray-600 hover:text-primary'}`}
-              role="menuitem"
-              aria-current={location.pathname === '/cookies' ? 'page' : undefined}
-            >
-              Cookies
-            </Link>
-            {user ? (
-              <Button asChild className="w-full">
-                <Link to="/app" className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity">
-                  Meus Projetos
-                </Link>
-              </Button>
-            ) : (
-              <LoginButton />
-            )}
+            <LoginButton />
           </div>
         </div>
       )}
