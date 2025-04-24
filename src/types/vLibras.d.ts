@@ -1,10 +1,16 @@
 
 interface VLibrasWidget {
-  translate(text: string): void;
+  translate: (text: string) => void;
+  stop: () => void;
+  enable: () => void;
 }
 
-interface VLibras {
-  Widget: VLibrasWidget | ((pluginUrl: string) => void) | { translate: (text: string) => void };
+export interface VLibras {
+  Widget: {
+    translate: (text: string) => void;
+    stop: () => void;
+    enable: () => void;
+  };
 }
 
 declare global {

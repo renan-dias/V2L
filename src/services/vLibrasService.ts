@@ -1,6 +1,6 @@
 
 // Import VLibras type definition
-import type { VLibras } from '@/types/vLibras';
+import { VLibras } from '@/types/vLibras';
 import { Subtitle } from '@/types/subtitle';
 
 export const loadVLibrasScript = async (): Promise<void> => {
