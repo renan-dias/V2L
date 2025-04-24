@@ -14,6 +14,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { 
+  DEFAULT_SYSTEM_PROMPT, 
+  PROMPT_SUGGESTIONS, 
+  InterpretationResult 
+} from '@/services/geminiService';
 
 // Componente para o passo de Upload
 const UploadStep: React.FC<{ project: Project; onNext: () => void }> = ({ project, onNext }) => {
