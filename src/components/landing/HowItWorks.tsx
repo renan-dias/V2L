@@ -17,20 +17,20 @@ const steps = [
   },
   {
     icon: <Edit className="h-10 w-10 text-white" />,
-    title: "Edição e Revisão",
-    description: "Edite as legendas conforme necessário para maior precisão",
+    title: "Transforme legendas em Interpretações",
+    description: "As legendas são enviadas para a IA e transformadas em interpretações em Libras",
     color: "bg-accent"
   },
   {
     icon: <Video className="h-10 w-10 text-white" />,
     title: "Geração de Libras",
-    description: "Tradução automática das legendas para Língua Brasileira de Sinais",
+    description: "Aplique a interpretação em Libras ao vídeo, com o VLibras incorporado",
     color: "bg-primary"
   },
   {
     icon: <Download className="h-10 w-10 text-white" />,
     title: "Finalização",
-    description: "Exporte seu vídeo com intérprete de Libras incorporado",
+    description: "Exporte seu vídeo com intérprete de Libras no seu vídeo!",
     color: "bg-secondary"
   }
 ];
