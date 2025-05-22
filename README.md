@@ -100,8 +100,6 @@ Este projeto está licenciado sob a licença MIT. Veja o arquivo `LICENSE` para 
 
 ## Contato
 
-Seu Nome - [@seu_twitter](https://twitter.com/seu_twitter) - email@example.com
-
 Link do Projeto: [https://github.com/renan-dias/video-2-libras](https://github.com/renan-dias/video-2-libras)
 
 ---
