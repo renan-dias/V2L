@@ -58,11 +58,16 @@ export const getVideoDetails = async (videoId: string) => {
   }
 };
 
-export const getVideoCaptions = async (videoId: string): Promise<Subtitle[]> => {
+export const getVideoCaptions = async (token: string, videoId: string): Promise<Subtitle[]> => {
   try {
     // Primeiro, obtemos a lista de legendas disponíveis
     const response = await fetch(
-      `https://www.googleapis.com/youtube/v3/captions?part=snippet&videoId=${videoId}&key=${YOUTUBE_API_KEY}`
+      `https://www.googleapis.com/youtube/v3/captions?part=snippet&videoId=${videoId}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
     );
     const data = await response.json();
     
@@ -81,10 +86,10 @@ export const getVideoCaptions = async (videoId: string): Promise<Subtitle[]> => 
     
     // Agora obtemos o conteúdo das legendas
     const captionResponse = await fetch(
-      `https://www.googleapis.com/youtube/v3/captions/${portugueseCaption.id}?key=${YOUTUBE_API_KEY}`,
+      `https://www.googleapis.com/youtube/v3/captions/${portugueseCaption.id}`,
       {
         headers: {
-          'Authorization': `Bearer ${await getAccessToken()}`
+          'Authorization': `Bearer ${token}`
         }
       }
     );
@@ -130,9 +135,4 @@ const parseSRT = (srtContent: string): Subtitle[] => {
   return subtitles;
 };
 
-// Função para obter o token de acesso (você precisará implementar a autenticação OAuth2)
-const getAccessToken = async (): Promise<string> => {
-  // Implemente a lógica para obter o token de acesso
-  // Isso pode envolver o uso do Firebase Auth ou outro método de autenticação
-  throw new Error('Not implemented');
-};
+// getAccessToken function removed as per requirements

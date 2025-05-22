@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Pencil, Save, X, Play, Pause } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { extractVideoId, getVideoCaptions } from '@/services/youtubeService';
+import { useAuth } from '@/components/auth/AuthProvider'; // Added import
 
 interface CaptionsStepProps {
   videoFile: File | null;
@@ -29,6 +30,7 @@ const CaptionsStep: React.FC<CaptionsStepProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const { toast } = useToast();
+  const { youtubeAccessToken, user } = useAuth(); // Added useAuth hook
 
   // Handle video playback
   useEffect(() => {
@@ -95,10 +97,38 @@ const CaptionsStep: React.FC<CaptionsStepProps> = ({
         // Process YouTube video
         const videoId = extractVideoId(videoSource);
         if (!videoId) {
-          throw new Error('Invalid YouTube URL');
+          // throw new Error('Invalid YouTube URL'); // Original error handling
+          toast({
+            title: "URL do YouTube Inválida",
+            description: "Não foi possível extrair o ID do vídeo da URL fornecida.",
+            variant: "destructive",
+          });
+          setIsProcessing(false); // Ensure processing state is reset
+          return;
+        }
+
+        if (!user) { // Check if user is available from useAuth()
+          toast({
+            title: "Usuário não autenticado",
+            description: "Por favor, faça login para extrair legendas de vídeos do YouTube.",
+            variant: "destructive",
+          });
+          setIsProcessing(false);
+          return;
+        }
+
+        if (!youtubeAccessToken) {
+          toast({
+            title: "Token de Acesso do YouTube Ausente",
+            description: "Não foi possível obter o token de acesso para o YouTube. Tente fazer login novamente.",
+            variant: "destructive",
+          });
+          setIsProcessing(false);
+          return;
         }
         
-        const extractedSubtitles = await getVideoCaptions(videoId);
+        // Pass the token as the first argument
+        const extractedSubtitles = await getVideoCaptions(youtubeAccessToken, videoId);
         setSubtitles(extractedSubtitles);
       } else {
         // Process local video
